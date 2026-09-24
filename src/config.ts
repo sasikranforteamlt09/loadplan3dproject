@@ -1,7 +1,7 @@
 /* ค่าตั้งต้นของระบบ แก้ที่ไฟล์นี้ไฟล์เดียว */
 
 /** ที่อยู่เว็บที่เผยแพร่จริง ใช้สร้างรหัสคิวอาร์ตอนสั่ง build */
-export const DEPLOY_URL = 'https://loadplan3d.pages.dev';
+export const DEPLOY_URL = 'https://loadplan3dproject.sasikran-forteamlt9.workers.dev';
 
 /** ข้อมูลปริญญานิพนธ์ (ไม่ระบุชื่อบริษัทใด ๆ) */
 export const THESIS = {
