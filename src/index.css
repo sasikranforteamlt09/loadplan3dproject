@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-surface text-ink font-sans antialiased;
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  /* ปุ่มตัวเลขไม่ต้องมีลูกศรขึ้นลง */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  :focus-visible { @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white; }
+}
+
+@layer components {
+  /* ===== ระบบออกแบบย่อย ===== */
+  .lp-card { @apply bg-white border border-line rounded-xl2 shadow-card; }
+  .lp-h2 { @apply text-base font-bold border-l-4 border-brand-500 pl-3 leading-tight; }
+  .lp-label { @apply block text-[13px] text-navy-600 mb-1; }
+  .lp-input {
+    @apply w-full min-h-[44px] px-3 py-2 border border-navy-200 rounded-lg bg-white text-[15px]
+           focus:border-brand-500;
+  }
+  .lp-btn {
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-lg
+           text-[15px] font-semibold transition select-none;
+  }
+  .lp-btn-primary { @apply lp-btn bg-brand-500 text-navy-900 hover:bg-brand-400 shadow-pop px-6; }
+  .lp-btn-ghost { @apply lp-btn bg-navy-100 text-navy-700 hover:bg-navy-200; }
+  .lp-btn-outline { @apply lp-btn bg-white border border-navy-200 text-navy-700 hover:bg-navy-50; }
+  .lp-note { @apply text-[13px] text-muted; }
+  .lp-warn { @apply bg-[#fff6f4] border-l-4 border-danger px-3 py-2 text-[13px] rounded-r-md my-2; }
+  .lp-ok { @apply bg-[#f1f8f3] border-l-4 border-ok px-3 py-2 text-[13px] rounded-r-md my-2; }
+  .lp-kpi { @apply bg-navy-50 border border-line rounded-lg p-3 text-center; }
+}
+
+/* ===== การพิมพ์ (A4) ===== */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .print-only { display: block !important; }
+  .lp-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+  .seqcard, .plancard { break-inside: auto; page-break-inside: auto; }
+  .seqwrap { max-height: none !important; overflow: visible !important; }
+  .seqtable { font-size: 11px; }
+  .seqtable th, .seqtable td { padding: 2px 4px; }
+  .seqtable thead { display: table-header-group; }
+  .seqtable tr { break-inside: avoid; page-break-inside: avoid; }
+  .printboth { display: block !important; }
+  /* ตัวเลขสรุปเรียงสี่ช่องต่อแถวเหมือนรุ่นวานิลลา */
+  .kpigrid { grid-template-columns: repeat(4, 1fr) !important; }
+}
+
+/* ภาพนิ่งแทน canvas WebGL ตอนพิมพ์ */
+.shot canvas { display: none !important; }
