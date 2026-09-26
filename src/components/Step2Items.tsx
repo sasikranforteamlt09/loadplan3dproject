@@ -22,6 +22,14 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
   const n = rows.reduce((s, r) => s + (Math.round(+r.qty) || 0), 0);
   const v = rows.reduce((s, r) => s + (Math.round(+r.qty) || 0) * (+r.l || 0) * (+r.w || 0) * (+r.h || 0), 0);
   const cap = box.l * box.w * box.h;
+  /* กลุ่มที่ใหญ่กว่าตู้ ไม่ว่าจะหมุนอย่างไรก็วางไม่ได้ */
+  const bd = [box.l, box.w, box.h].sort((a, b) => a - b);
+  const oversize = rows
+    .filter(r => {
+      const d = [+r.l || 0, +r.w || 0, +r.h || 0].sort((a, b) => a - b);
+      return d[2] > 0 && (Math.round(+r.qty) || 0) > 0 && (d[0] > bd[0] || d[1] > bd[1] || d[2] > bd[2]);
+    })
+    .map(r => r.name);
   const p = cap > 0 ? (v / cap) * 100 : 0;
 
   const doPaste = () => {
@@ -123,7 +131,7 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
           <button type="button" id="btn-demo" className="lp-btn-ghost"
             onClick={() => onRows(DEMO_ROWS.map(makeRow))}>ใส่ข้อมูลตัวอย่าง</button>
           <button type="button" className="lp-btn-ghost"
-            onClick={() => onRows(rows.map(r => ({ ...r, qty: '0' })))}>ล้างจำนวนเป็น 0</button>
+            onClick={() => { if (n === 0 || window.confirm('ล้างจำนวนพัสดุทุกกลุ่มเป็น 0 ใช่หรือไม่')) onRows(rows.map(r => ({ ...r, qty: '0' }))); }}>ล้างจำนวนเป็น 0</button>
           <button type="button" className="lp-btn-ghost" aria-expanded={paste}
             onClick={() => setPaste(x => !x)}>วางจาก Excel</button>
         </div>
@@ -150,15 +158,24 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
             </div>
           </div>
         </div>
+        {oversize.length > 0 && (
+          <p className="lp-warn">
+            กลุ่ม {oversize.join(' · ')} มีขนาดใหญ่กว่าพื้นที่บรรทุก ระบบจะวางไม่ได้ ตรวจดูว่ากรอกตัวเลขถูกหรือไม่
+          </p>
+        )}
         {p > 100 && (
           <p className="lp-warn">ปริมาตรพัสดุรวมมากกว่าปริมาตรตู้ อาจมีพัสดุบางส่วนที่ระบบวางไม่ได้</p>
         )}
         <p className="lp-note mt-2">พัสดุที่หนักต่ำกว่า 1 กก. ซึ่งรวมลงถุงกระสอบ อยู่นอกขอบเขตการคำนวณ</p>
       </section>
 
-      <div className="flex flex-col sm:flex-row justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button type="button" className="lp-btn-ghost" onClick={onBack}>← กลับไปเลือกรถ</button>
-        <button type="button" id="btn-run" className="lp-btn-primary" onClick={onRun}>คำนวณแผนการจัดวาง →</button>
+        <div className="flex flex-col sm:items-end gap-1">
+          {n === 0 && <span className="text-[13px] text-muted">ยังไม่ได้ใส่จำนวนพัสดุ</span>}
+          <button type="button" id="btn-run" className="lp-btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={n === 0} onClick={onRun}>คำนวณแผนการจัดวาง →</button>
+        </div>
       </div>
     </div>
   );

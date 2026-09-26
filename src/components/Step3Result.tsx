@@ -54,40 +54,73 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
 
   return (
     <div className="space-y-4">
+      <section className="print-only hidden mb-3">
+        <h1 className="text-[16px] font-bold">แผนการจัดวางพัสดุขึ้นพื้นที่บรรทุก</h1>
+        <p className="text-[12px]">
+          วันที่พิมพ์ {new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })} ·
+          ขนาดภายในตู้ {r.box.l} × {r.box.w} × {r.box.h} ซม.
+          {r.box.maxKg > 0 ? ` · น้ำหนักบรรทุกสูงสุด ${r.box.maxKg} กก.` : ''}
+          {r.reserve ? ` · กันพื้นที่ท้ายรถให้ถุงกระสอบ ${r.reserve} ซม.` : ''}
+        </p>
+        <p className="text-[12px]">
+          พัสดุทั้งหมด {r.placed.length + r.failed.length} ชิ้น · วางได้ {r.placed.length} ชิ้น ·
+          วางไม่ได้ {r.failed.length} ชิ้น · น้ำหนักรวม {r.totalKg.toFixed(1)} กก. ·
+          อัตราการใช้ประโยชน์ปริมาตร {r.U.toFixed(2)}%
+        </p>
+        <p className="text-[12px]">ผู้จัดทำแผน ....................................................</p>
+      </section>
+
       <section className="lp-card p-4">
         <h2 className="lp-h2 mb-3">ผลการคำนวณ</h2>
-        <div className="kpigrid grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Kpi v={r.U.toFixed(2) + '%'} t="อัตราการใช้ประโยชน์ปริมาตร" />
-          <Kpi id="kpi-n" v={r.placed.length + (r.failed.length ? ' / ' + (r.placed.length + r.failed.length) : '')} t="จำนวนชิ้นที่วางได้" />
-          <Kpi v={r.usedL.toFixed(1)} t="ความยาวที่ใช้ (ซม.)" />
-          <Kpi v={r.ms < 1000 ? r.ms.toFixed(0) + ' มิลลิวินาที' : (r.ms / 1000).toFixed(2) + ' วินาที'} t="เวลาที่ระบบใช้คำนวณ" />
-        </div>
 
         {r.failed.length ? (
-          <div className="lp-warn">
+          <div className="lp-warn mb-3">
             <b>มีพัสดุที่ระบบวางไม่ได้ {r.failed.length} ชิ้น</b><br />
             {Object.entries(why).map(e => e[0] + ' ' + e[1] + ' ชิ้น').join(' · ')}<br />
             แปลว่าพัสดุชุดนี้เกินความจุของพื้นที่บรรทุก ต้องแบ่งรอบหรือเพิ่มคันรถ
           </div>
         ) : (
-          <div className="lp-ok">ระบบจัดวางพัสดุได้ครบทุกชิ้น ภายในพื้นที่บรรทุกที่กำหนด</div>
+          <div className="lp-ok mb-3">ระบบจัดวางพัสดุได้ครบทุกชิ้น ภายในพื้นที่บรรทุกที่กำหนด</div>
         )}
 
-        <p className="lp-note mt-2">
-          ปริมาตรพัสดุรวม {(r.volItems / 1e6).toFixed(3)} ลบ.ม. ·
-          ปริมาตรพื้นที่บรรทุกที่ใช้ไปจริง {(r.volUsed / 1e6).toFixed(3)} ลบ.ม. ·
-          น้ำหนักรวม {r.totalKg.toFixed(1)} กก.
-          {r.reserve ? ` · กันพื้นที่ท้ายรถให้ถุงกระสอบ ${r.reserve} ซม.` : ''}
-        </p>
-        <p className="lp-note">
-          <b>ปริมาตรว่างคงเหลือ (ไม่รวมพื้นที่ท้ายรถที่กันไว้) {(r.volFree / 1e6).toFixed(3)} ลบ.ม.</b>
-          {' = '}{(r.volBoxZone > 0 ? (r.volFree / r.volBoxZone * 100).toFixed(1) : '0.0')}
-          % ของปริมาตรพื้นที่บรรทุกที่ใช้วางได้ {(r.volBoxZone / 1e6).toFixed(3)} ลบ.ม.
-          {r.volReserve > 0 ? ` · ปริมาตรพื้นที่ท้ายรถที่กันไว้ให้ถุงกระสอบ ${(r.volReserve / 1e6).toFixed(3)} ลบ.ม.` : ''}
-        </p>
-        <p className="lp-note">
-          อัตราการใช้ประโยชน์ปริมาตร = ผลรวมปริมาตรพัสดุ ÷ (ความยาวที่ใช้ไปจริง × ความกว้างภายใน × ความสูงภายใน)
-        </p>
+        <div className="kpigrid grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Kpi id="kpi-n" v={r.placed.length + (r.failed.length ? ' / ' + (r.placed.length + r.failed.length) : '')} t="จำนวนชิ้นที่วางได้" />
+          <Kpi v={r.U.toFixed(2) + '%'} t="อัตราการใช้ประโยชน์ปริมาตร (ตู้เต็มกี่ %)" />
+          <Kpi v={r.box.maxKg > 0 ? r.totalKg.toFixed(1) + ' / ' + r.box.maxKg : r.totalKg.toFixed(1)}
+            t={r.box.maxKg > 0 ? 'น้ำหนักรวม เทียบเพดานบรรทุก (กก.)' : 'น้ำหนักรวม (กก.)'} />
+          <Kpi v={r.usedL.toFixed(1)} t="ความยาวที่ใช้ (ซม.)" />
+        </div>
+
+        {r.box.maxKg > 0 && (
+          <div className="h-2.5 bg-line rounded-full overflow-hidden mt-3" aria-hidden="true">
+            <i className={`block h-full ${r.totalKg > r.box.maxKg ? 'bg-danger' : 'bg-ok'}`}
+              style={{ width: Math.min(100, (r.totalKg / r.box.maxKg) * 100) + '%' }} />
+          </div>
+        )}
+
+        <details className="mt-3">
+          <summary className="cursor-pointer text-[14px] text-navy-700 min-h-[44px] flex items-center">
+            รายละเอียดสำหรับงานวิจัย
+          </summary>
+          <p className="lp-note mt-2">
+            ปริมาตรพัสดุรวม {(r.volItems / 1e6).toFixed(3)} ลบ.ม. ·
+            ปริมาตรพื้นที่บรรทุกที่ใช้ไปจริง {(r.volUsed / 1e6).toFixed(3)} ลบ.ม. ·
+            น้ำหนักรวม {r.totalKg.toFixed(1)} กก.
+            {r.reserve ? ` · กันพื้นที่ท้ายรถให้ถุงกระสอบ ${r.reserve} ซม.` : ''}
+          </p>
+          <p className="lp-note">
+            <b>ปริมาตรว่างคงเหลือ (ไม่รวมพื้นที่ท้ายรถที่กันไว้) {(r.volFree / 1e6).toFixed(3)} ลบ.ม.</b>
+            {' = '}{(r.volBoxZone > 0 ? (r.volFree / r.volBoxZone * 100).toFixed(1) : '0.0')}
+            % ของปริมาตรพื้นที่บรรทุกที่ใช้วางได้ {(r.volBoxZone / 1e6).toFixed(3)} ลบ.ม.
+            {r.volReserve > 0 ? ` · ปริมาตรพื้นที่ท้ายรถที่กันไว้ให้ถุงกระสอบ ${(r.volReserve / 1e6).toFixed(3)} ลบ.ม.` : ''}
+          </p>
+          <p className="lp-note">
+            อัตราการใช้ประโยชน์ปริมาตร = ผลรวมปริมาตรพัสดุ ÷ (ความยาวที่ใช้ไปจริง × ความกว้างภายใน × ความสูงภายใน)
+          </p>
+          <p className="lp-note">
+            เวลาที่ระบบใช้คำนวณ {r.ms < 1000 ? r.ms.toFixed(0) + ' มิลลิวินาที' : (r.ms / 1000).toFixed(2) + ' วินาที'}
+          </p>
+        </details>
       </section>
 
       <section className="lp-card p-4 plancard">
