@@ -115,7 +115,7 @@ export default function Landing() {
       <section id="screens" className="py-16 sm:py-20">
         <div className="max-w-[1160px] mx-auto px-5">
           <p className="text-brand-600 font-semibold text-sm tracking-wide mb-1.5">หน้าตาของระบบ</p>
-          <h2 className="text-[24px] sm:text-[32px] font-bold mb-3">ภาพหน้าจอจากการใช้งานจริง</h2>
+          <h2 className="text-[24px] sm:text-[32px] font-bold mb-3">ภาพหน้าจอของระบบ (ข้อมูลตัวอย่าง)</h2>
           <p className="text-muted max-w-[680px] mb-9 text-[17px]">ทุกภาพถ่ายจากระบบรุ่นที่เผยแพร่ ไม่ใช่ภาพจำลอง</p>
           <div className="grid md:grid-cols-3 gap-5">
             {SHOTS.map(s => (
