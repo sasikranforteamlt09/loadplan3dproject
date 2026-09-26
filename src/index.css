@@ -19,24 +19,31 @@
 
 @layer components {
   /* ===== ระบบออกแบบย่อย ===== */
-  .lp-card { @apply bg-white border border-line rounded-xl2 shadow-card; }
+  .lp-card { @apply bg-white border-1.5 border-line rounded-card; }
   .lp-h2 { @apply text-base font-bold border-l-4 border-brand-500 pl-3 leading-tight; }
-  .lp-label { @apply block text-[13px] text-navy-600 mb-1; }
+  .lp-label { @apply block text-[14px] font-semibold text-navy-700 mb-1; }
   .lp-input {
-    @apply w-full min-h-[44px] px-3 py-2 border border-navy-200 rounded-lg bg-white text-[15px]
+    @apply w-full min-h-[48px] px-3 py-2 border-1.5 border-navy-300 rounded-ctl bg-white text-[16px] font-semibold
            focus:border-brand-500;
   }
   .lp-btn {
-    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-lg
-           text-[15px] font-semibold transition select-none;
+    @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-ctl
+           text-[16px] font-bold transition select-none;
   }
-  .lp-btn-primary { @apply lp-btn bg-brand-500 text-navy-900 hover:bg-brand-400 shadow-pop px-6; }
+  .lp-btn-primary { @apply lp-btn min-h-cta bg-brand-500 text-navy-900 hover:bg-brand-400 shadow-pop px-6 text-cta; }
   .lp-btn-ghost { @apply lp-btn bg-navy-100 text-navy-700 hover:bg-navy-200; }
-  .lp-btn-outline { @apply lp-btn bg-white border border-navy-200 text-navy-700 hover:bg-navy-50; }
-  .lp-note { @apply text-[13px] text-muted; }
-  .lp-warn { @apply bg-[#fff6f4] border-l-4 border-danger px-3 py-2 text-[13px] rounded-r-md my-2; }
-  .lp-ok { @apply bg-[#f1f8f3] border-l-4 border-ok px-3 py-2 text-[13px] rounded-r-md my-2; }
-  .lp-kpi { @apply bg-navy-50 border border-line rounded-lg p-3 text-center; }
+  .lp-btn-outline { @apply lp-btn bg-white border-1.5 border-navy-300 text-navy-700 hover:bg-navy-50; }
+  .lp-note { @apply text-[14px] text-muted; }
+  .lp-warn { @apply bg-danger-bg border-l-4 border-danger px-3 py-2.5 text-[14px] text-ink rounded-r-md my-2; }
+  .lp-ok { @apply bg-ok-bg border-l-4 border-ok px-3 py-2.5 text-[14px] text-ink rounded-r-md my-2; }
+  .lp-kpi { @apply bg-white border-1.5 border-line rounded-ctl p-3 text-center; }
+  /* แถบปุ่มติดล่างจอ สำหรับใช้มือเดียวบนมือถือ */
+  .lp-bar {
+    @apply sticky bottom-0 z-20 -mx-3 sm:mx-0 px-3 sm:px-0 py-3
+           bg-surface/95 backdrop-blur border-t-1.5 border-line shadow-bar sm:shadow-none
+           sm:border-t-0 sm:bg-transparent sm:backdrop-blur-none sm:static;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ===== การพิมพ์ (A4) ===== */
@@ -44,6 +51,7 @@
   @page { size: A4; margin: 12mm; }
   body { background: #fff; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .noprint { display: none !important; }
+  .lp-bar { position: static !important; box-shadow: none !important; border: 0 !important; }
   .print-only { display: block !important; }
   .lp-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
   .seqcard, .plancard { break-inside: auto; page-break-inside: auto; }
