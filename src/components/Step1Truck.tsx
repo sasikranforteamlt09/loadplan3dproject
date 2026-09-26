@@ -84,7 +84,7 @@ export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck
           )}
           <p className="lp-note mt-2">ลากเพื่อหมุน · หมุนล้อเมาส์เพื่อซูม · ด้านที่มีเส้นสีแดงคือท้ายรถ (ประตู)</p>
         </section>
-        <div className="flex justify-end">
+        <div className="lp-bar flex justify-end">
           <button type="button" className="lp-btn-primary w-full sm:w-auto" onClick={onNext}>
             ถัดไป: นับพัสดุ →
           </button>
