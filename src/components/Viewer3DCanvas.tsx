@@ -14,12 +14,14 @@ interface Props {
   height: number;
   /** ซ่อนอยู่ (เช่นสลับแท็บ) จะไม่วาดใหม่ */
   active?: boolean;
+  /** โหมดจำลอง: แสดงเฉพาะ n ชิ้นแรก (ไม่ใส่ = แสดงครบทุกชิ้น) */
+  visibleCount?: number;
   label: string;
 }
 
 /** ห่อ three.js ด้วย component เดียว ใช้ renderer ตัวเดิมตลอดอายุ component */
 const Viewer3DCanvas = forwardRef<Viewer3DHandle, Props>(function Viewer3DCanvas(
-  { box, placed, reserve, height, active = true, label }, ref,
+  { box, placed, reserve, height, active = true, visibleCount = -1, label }, ref,
 ) {
   const cvRef = useRef<HTMLCanvasElement>(null);
   const vRef = useRef<Viewer3D | null>(null);
@@ -40,6 +42,12 @@ const Viewer3DCanvas = forwardRef<Viewer3DHandle, Props>(function Viewer3DCanvas
     if (!active) return;
     vRef.current?.draw(box, placed, reserve);
   }, [box, placed, reserve, active]);
+
+  /* แยกจากการวาดใหม่โดยเด็ดขาด ไม่งั้นจะสร้างกล่องใหม่ทุกก้าว */
+  useEffect(() => {
+    if (!active) return;
+    vRef.current?.setVisibleCount(visibleCount);
+  }, [visibleCount, active, placed]);
 
   useImperativeHandle(ref, () => ({
     snapshot: () => vRef.current?.toDataURL() ?? null,

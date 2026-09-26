@@ -32,7 +32,7 @@ export default {
         sans: ['"Noto Sans Thai"', '"Sarabun"', '"IBM Plex Sans Thai"', '"Leelawadee UI"',
                '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
       },
-      borderRadius: { xl2: '14px', card: '16px', ctl: '12px' },
+      borderRadius: { xl2: '14px', card: '16px', ctl: '12px', pill: '9999px' },
       fontSize: {
         metric: ['32px', { lineHeight: '36px', fontWeight: '700' }],
         'metric-sm': ['24px', { lineHeight: '30px', fontWeight: '700' }],

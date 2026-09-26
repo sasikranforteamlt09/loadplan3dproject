@@ -37,13 +37,72 @@
   .lp-warn { @apply bg-danger-bg border-l-4 border-danger px-3 py-2.5 text-[14px] text-ink rounded-r-md my-2; }
   .lp-ok { @apply bg-ok-bg border-l-4 border-ok px-3 py-2.5 text-[14px] text-ink rounded-r-md my-2; }
   .lp-kpi { @apply bg-white border-1.5 border-line rounded-ctl p-3 text-center; }
-  /* แถบปุ่มติดล่างจอ สำหรับใช้มือเดียวบนมือถือ */
+
+  /* ===== ส่วนประกอบหน้าจอแบบใหม่ ===== */
+  .lp-sect { @apply flex items-center gap-2.5 mb-3.5; }
+  .lp-sect-ico { @apply w-9 h-9 rounded-ctl bg-navy-100 text-navy-700 grid place-items-center shrink-0; }
+  .lp-sect-t { @apply text-[17px] font-bold text-ink leading-tight; }
+  .lp-sect-s { @apply block text-[13px] font-normal text-muted leading-snug; }
+
+  .lp-chip { @apply inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[12px] font-bold; }
+  .lp-chip-brand { @apply lp-chip bg-brand-100 text-brand-800; }
+  .lp-chip-navy { @apply lp-chip bg-navy-100 text-navy-700; }
+  .lp-chip-ok { @apply lp-chip bg-ok-bg text-ok; }
+
+  /* การ์ดตัวเลือก (เลือกประเภทรถ) */
+  .lp-pick {
+    @apply w-full text-left flex items-center gap-3 p-3.5 rounded-card border-2 bg-white
+           border-navy-200 transition min-h-[76px];
+  }
+  .lp-pick:hover { @apply border-navy-300; }
+  .lp-pick-on { @apply border-brand-500 bg-brand-50; }
+  .lp-pick-ico { @apply w-12 h-12 rounded-ctl grid place-items-center shrink-0 bg-navy-100 text-navy-700; }
+  .lp-pick-on .lp-pick-ico { @apply bg-brand-500 text-navy-900; }
+
+  /* ช่องกรอกตัวเลขพร้อมหน่วย */
+  .lp-field { @apply relative; }
+  .lp-field input { @apply w-full min-h-[56px] pl-3.5 pr-12 rounded-ctl border-1.5 border-navy-200 bg-white
+                            text-[22px] font-bold text-ink tabular-nums focus:border-brand-500; }
+  .lp-field .unit { @apply absolute right-3.5 bottom-0 h-[56px] grid place-items-center
+                           text-[13px] font-semibold text-muted pointer-events-none; }
+
+  /* ปุ่มนับจำนวน */
+  .lp-step-btn {
+    @apply w-10 h-10 sm:w-11 sm:h-11 rounded-pill grid place-items-center text-[21px] font-bold leading-none
+           select-none transition shrink-0;
+  }
+  .lp-step-minus { @apply lp-step-btn bg-navy-100 text-navy-700 active:bg-navy-200; }
+  .lp-step-plus  { @apply lp-step-btn bg-navy-700 text-white active:bg-navy-800; }
+  .lp-qty { @apply w-[52px] sm:w-16 h-10 sm:h-11 text-center rounded-ctl border-1.5 border-navy-200 bg-white
+                   text-[18px] font-bold tabular-nums focus:border-brand-500; }
+
+  /* แถวพัสดุบนมือถือ */
+  .lp-row { @apply flex items-center gap-2 sm:gap-3 py-3 border-b border-line last:border-b-0; }
+  .lp-row-tag { @apply w-9 h-9 sm:w-10 sm:h-10 rounded-ctl grid place-items-center text-white font-black text-[14px] shrink-0; }
+  .lp-row-art { @apply w-11 h-11 rounded-ctl bg-navy-50 border border-line grid place-items-center; }
+
+  /* ช่องตัวเลขผลลัพธ์ */
+  .lp-stat { @apply bg-white border-1.5 border-line rounded-card p-3.5; }
+  .lp-stat-ico { @apply w-8 h-8 rounded-lg bg-navy-100 text-navy-700 grid place-items-center mb-2; }
+  .lp-gauge { @apply h-3 rounded-pill bg-navy-100 overflow-hidden; }
+
+  /* ปุ่มควบคุมโหมดจำลองการจัดวาง */
+  .lp-sim-btn {
+    @apply w-12 h-12 rounded-pill grid place-items-center border-1.5 border-navy-300 bg-white
+           text-navy-700 transition active:bg-navy-100 shrink-0;
+  }
+
+  /* แถบนำทางล่างจอ (เฉพาะมือถือ) */
+  .lp-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* แถบปุ่มติดล่างจอ สำหรับใช้มือเดียวบนมือถือ ลอยอยู่เหนือแถบนำทาง */
   .lp-bar {
-    @apply sticky bottom-0 z-20 -mx-3 sm:mx-0 px-3 sm:px-0 py-3
+    @apply sticky z-20 -mx-3 sm:mx-0 px-3 sm:px-0 py-3
            bg-surface/95 backdrop-blur border-t-1.5 border-line shadow-bar sm:shadow-none
            sm:border-t-0 sm:bg-transparent sm:backdrop-blur-none sm:static;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
+  @screen sm { .lp-bar { bottom: auto; } }
 }
 
 /* ===== การพิมพ์ (A4) ===== */
@@ -52,6 +111,7 @@
   body { background: #fff; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .noprint { display: none !important; }
   .lp-bar { position: static !important; box-shadow: none !important; border: 0 !important; }
+  .lp-nav { display: none !important; }
   .print-only { display: block !important; }
   .lp-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
   .seqcard, .plancard { break-inside: auto; page-break-inside: auto; }

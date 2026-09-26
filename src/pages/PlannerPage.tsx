@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { AppHeader } from '../components/Layout';
 import Stepper from '../components/Stepper';
+import BottomNav from '../components/BottomNav';
 import Step1Truck from '../components/Step1Truck';
 import Step2Items from '../components/Step2Items';
 import Step3Result from '../components/Step3Result';
@@ -12,6 +13,9 @@ export interface GroupRow {
   name: string;
   l: string; w: string; h: string; kg: string; qty: string;
   color: string;
+  /** รูปทรงของพัสดุ ใช้เพื่อการแสดงผลและวิธีกรอกเท่านั้น
+      ทรงกระบอกจะถูกแปลงเป็นกล่องครอบเล็กที่สุดก่อนเข้าการคำนวณ ตามหัวข้อ 2.4.3 ของเล่ม */
+  shape?: 'box' | 'cyl';
 }
 
 export interface Plan extends PackResult { box: Box; reserve: number }
@@ -23,6 +27,7 @@ export function makeRow(v: Partial<Omit<GroupRow, 'id' | 'color'>>, index: numbe
     name: v.name ?? 'กลุ่ม ' + (index + 1),
     l: v.l ?? '', w: v.w ?? '', h: v.h ?? '', kg: v.kg ?? '', qty: v.qty ?? '0',
     color: PALETTE[index % PALETTE.length],
+    shape: v.shape ?? 'box',
   };
 }
 
@@ -105,8 +110,9 @@ export default function PlannerPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <AppHeader />
-      <main ref={topRef} className="flex-1 w-full max-w-[1180px] mx-auto px-4 py-4">
-        <Stepper step={step} maxStep={maxStep} onGo={go} />
+      <main ref={topRef}
+        className="flex-1 w-full max-w-[1180px] mx-auto px-4 py-4 pb-[calc(76px+env(safe-area-inset-bottom,0px))] sm:pb-4">
+        <div className="hidden sm:block"><Stepper step={step} maxStep={maxStep} onGo={go} /></div>
         {step === 1 && (
           <Step1Truck
             truck={truck} dims={dims} rot={rot} box={box} reserve={reserve}
@@ -126,6 +132,7 @@ export default function PlannerPage() {
           <Step3Result plan={plan} onBack={() => go(2)} />
         )}
       </main>
+      <div className="sm:hidden"><BottomNav step={step} maxStep={maxStep} onGo={go} /></div>
     </div>
   );
 }

@@ -12,6 +12,9 @@ export class Viewer3D {
   private sc = new THREE.Scene();
   private cam = new THREE.PerspectiveCamera(42, 1, 1, 20000);
   private grp: THREE.Group | null = null;
+  /** กล่องแต่ละชิ้นตามลำดับ placed (= ลำดับ seq) ใช้สำหรับโหมดจำลองการจัดวาง */
+  private cubes: { mesh: THREE.Mesh; edge: THREE.LineSegments; mat: THREE.MeshLambertMaterial }[] = [];
+  private shown = -1;   // -1 = แสดงทุกชิ้น (พฤติกรรมเดิม)
   private box: Box | null = null;
   private rotY = -0.7; private rotX = 0.45; private dist = 1.9;
   private drag = false; private lx = 0; private ly = 0;
@@ -111,20 +114,47 @@ export class Viewer3D {
         new THREE.Vector3(zx, oy + b.h, oz), new THREE.Vector3(zx, oy, oz)]),
         new THREE.LineBasicMaterial({ color: 0xb4553f })));
     }
+    this.cubes = [];
     placed.forEach(p => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(p.l, p.h, p.w),
-        new THREE.MeshLambertMaterial({ color: new THREE.Color(p.color) }));
+      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.color) });
+      const m = new THREE.Mesh(new THREE.BoxGeometry(p.l, p.h, p.w), mat);
       m.position.set(ox + p.x + p.l / 2, oy + p.z + p.h / 2, oz + p.y + p.w / 2);
       G.add(m);
       const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),
         new THREE.LineBasicMaterial({ color: 0x1b2733, transparent: true, opacity: 0.35 }));
       e.position.copy(m.position); G.add(e);
+      this.cubes.push({ mesh: m, edge: e, mat });
     });
+    /* วาดใหม่ทุกครั้งต้องกลับไปแสดงครบทุกชิ้นเสมอ กันภาพพิมพ์ขาด */
+    this.shown = -1;
     this.grp = G; this.sc.add(G); this.render();
+  }
+
+  /** จำนวนกล่องที่วางไว้แล้วทั้งหมด */
+  count(): number { return this.cubes.length; }
+
+  /** โหมดจำลอง: แสดงเฉพาะ n ชิ้นแรกตามลำดับการวางจริง (n < 0 = แสดงครบทุกชิ้น)
+      ใช้การซ่อน/แสดงกล่องที่สร้างไว้แล้ว ไม่สร้างใหม่ จึงไม่หน่วงแม้มีนับพันชิ้น */
+  setVisibleCount(n: number): void {
+    if (n === this.shown) return;
+    this.shown = n;
+    const all = n < 0;
+    this.cubes.forEach((c, i) => {
+      const on = all || i < n;
+      c.mesh.visible = on;
+      c.edge.visible = on;
+      /* ชิ้นล่าสุดที่เพิ่งวาง เน้นให้เรืองขึ้นมา */
+      const last = !all && i === n - 1;
+      c.mat.emissive.setHex(last ? 0x6b4a00 : 0x000000);
+      (c.edge.material as THREE.LineBasicMaterial).opacity = last ? 1 : 0.35;
+    });
+    this.render();
   }
 
   /** ภาพนิ่งสำหรับการพิมพ์ (WebGL อาจพิมพ์ออกมาว่าง จึงแปลงเป็นรูปภาพก่อน) */
   toDataURL(): string | null {
+    /* ต้องแสดงครบทุกชิ้นก่อนเสมอ ไม่งั้นภาพที่พิมพ์จะขาด */
+    this.setVisibleCount(-1);
     try { return this.cv.toDataURL('image/png'); } catch { return null; }
   }
 
