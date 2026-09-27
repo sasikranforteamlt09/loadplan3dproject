@@ -116,16 +116,18 @@ export class Viewer3D {
     }
     this.cubes = [];
     placed.forEach(p => {
-      const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.color) });
-      /* หดกล่องที่วาดลงเล็กน้อย เพื่อให้เห็นร่องระหว่างกล่องที่ติดกัน
-         เป็นการปรับเฉพาะการแสดงผล พิกัดจริงที่ใช้คำนวณไม่เปลี่ยน */
-      const gap = Math.min(1.2, Math.min(p.l, p.w, p.h) * 0.12);
-      const m = new THREE.Mesh(
-        new THREE.BoxGeometry(Math.max(0.1, p.l - gap), Math.max(0.1, p.h - gap), Math.max(0.1, p.w - gap)), mat);
+      /* กล่องวาดเต็มขนาดจริง ชิดกันสนิทตามพิกัดที่อัลกอริทึมคำนวณ
+         ใช้ polygonOffset ดันผิวกล่องถอยไปเล็กน้อย เส้นขอบจึงวาดทับได้คมชัด
+         ไม่จมหายไปกับผิวของกล่องที่อยู่ติดกัน */
+      const mat = new THREE.MeshLambertMaterial({
+        color: new THREE.Color(p.color),
+        polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+      });
+      const m = new THREE.Mesh(new THREE.BoxGeometry(p.l, p.h, p.w), mat);
       m.position.set(ox + p.x + p.l / 2, oy + p.z + p.h / 2, oz + p.y + p.w / 2);
       G.add(m);
       const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),
-        new THREE.LineBasicMaterial({ color: 0x0f172a, transparent: true, opacity: 0.9 }));
+        new THREE.LineBasicMaterial({ color: 0x0b1220, transparent: true, opacity: 1 }));
       e.position.copy(m.position); G.add(e);
       this.cubes.push({ mesh: m, edge: e, mat });
     });
@@ -150,7 +152,8 @@ export class Viewer3D {
       /* ชิ้นล่าสุดที่เพิ่งวาง เน้นให้เรืองขึ้นมา */
       const last = !all && i === n - 1;
       c.mat.emissive.setHex(last ? 0x6b4a00 : 0x000000);
-      (c.edge.material as THREE.LineBasicMaterial).opacity = last ? 1 : 0.9;
+      (c.edge.material as THREE.LineBasicMaterial).opacity = 1;
+      (c.edge.material as THREE.LineBasicMaterial).color.setHex(last ? 0xb45309 : 0x0b1220);
     });
     this.render();
   }
