@@ -12,6 +12,7 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
   const [simIdx, setSimIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
+  const seqWrap = useRef<HTMLDivElement>(null);
   const v3wrap = useRef<HTMLDivElement>(null);
   const v2wrap = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -72,10 +73,17 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
   useEffect(() => { if (tab !== '3d') { setSimOn(false); setPlaying(false); } }, [tab]);
   useEffect(() => { setSimOn(false); setPlaying(false); setSimIdx(0); }, [plan]);
 
-  /* เลื่อนตารางลำดับตามชิ้นที่กำลังแสดง */
+  /* เลื่อนเฉพาะ "ภายในกล่องตาราง" เท่านั้น ห้ามเลื่อนทั้งหน้าจอ
+     ไม่ใช้ scrollIntoView เพราะมันลากทั้งหน้าลงไปด้วย ทำให้ภาพสามมิติหลุดจอ */
   useEffect(() => {
     if (!simOn || simIdx < 1) return;
-    rowRefs.current[simIdx]?.scrollIntoView({ block: 'nearest' });
+    const wrap = seqWrap.current;
+    const row = rowRefs.current[simIdx];
+    if (!wrap || !row) return;
+    const head = wrap.querySelector('thead');
+    const headH = head ? (head as HTMLElement).offsetHeight : 0;
+    const target = row.offsetTop - headH - wrap.clientHeight / 2 + row.offsetHeight / 2;
+    wrap.scrollTop = Math.max(0, target);
   }, [simIdx, simOn]);
 
   const why: Record<string, number> = {};
@@ -124,11 +132,24 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
         <div className="kpigrid grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           <Kpi id="kpi-n" ico={<IcBox size={18} />}
             v={r.placed.length + (r.failed.length ? ' / ' + (r.placed.length + r.failed.length) : '')} t="จำนวนชิ้นที่วางได้" />
-          <Kpi ico={<IcPercent size={18} />} v={r.U.toFixed(2) + '%'} t="อัตราการใช้ประโยชน์ปริมาตร" />
+          <Kpi ico={<IcPercent size={18} />} v={r.U.toFixed(2) + '%'} t="อัตราการใช้ประโยชน์ปริมาตร (เฉพาะช่วงที่วางของ)" />
           <Kpi ico={<IcWeight size={18} />}
             v={r.box.maxKg > 0 ? r.totalKg.toFixed(1) + ' / ' + r.box.maxKg : r.totalKg.toFixed(1)}
             t={r.box.maxKg > 0 ? 'น้ำหนักรวม เทียบเพดาน (กก.)' : 'น้ำหนักรวม (กก.)'} />
-          <Kpi ico={<IcDepth size={18} />} v={r.usedL.toFixed(1)} t="ความยาวที่ใช้ (ซม.)" />
+          <Kpi ico={<IcDepth size={18} />} v={r.usedL.toFixed(0) + ' / ' + r.box.l}
+            t="ความลึกที่ใช้ เทียบตู้ทั้งคัน (ซม.)" />
+        </div>
+
+        <div className="mt-3 rounded-ctl bg-navy-50 border border-line p-3">
+          <p className="text-[13px] text-ink m-0 leading-snug">
+            <b>อ่านตัวเลขให้ถูก:</b> อัตราการใช้ประโยชน์ปริมาตร {r.U.toFixed(2)}% คิดจาก
+            <b> ช่วงที่วางของจริง</b> คือลึก {r.usedL.toFixed(0)} ซม. ไม่ใช่ทั้งตู้
+            — บอกว่ากองที่จัดวาง<b>แน่น</b>แค่ไหน
+          </p>
+          <p className="text-[13px] text-muted m-0 mt-1.5 leading-snug">
+            ถ้าเทียบกับพื้นที่บรรทุกทั้งคัน ใช้ไป <b className="text-navy-700">{r.Uzone.toFixed(2)}%</b> ·
+            ใช้ความลึกไป {r.usedL.toFixed(0)} จาก {r.box.l} ซม.
+          </p>
         </div>
 
         {r.box.maxKg > 0 && (
@@ -276,7 +297,7 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
           ตำแหน่งวัดจากผนังหน้าตู้ ผนังซ้าย และพื้นตู้ · วางตามลำดับจากผนังหน้าตู้ออกมาทางประตูท้าย
           ชิ้นที่อยู่ด้านบนจะมาหลังชิ้นที่รองรับอยู่ด้านล่างเสมอ
         </p>
-        <div className="seqwrap max-h-[420px] overflow-auto">
+        <div ref={seqWrap} className="seqwrap max-h-[420px] overflow-auto relative">
           <table id="seq" className="seqtable w-full border-collapse text-[14px]">
             <thead>
               <tr>

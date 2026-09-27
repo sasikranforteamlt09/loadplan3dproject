@@ -152,3 +152,10 @@ export const IcNext = ({ className, size }: P) => (
 export const IcRewind = ({ className, size }: P) => (
   <svg {...base(size)} className={className}><path d="M18 5.5 11 12l7 6.5M7 5v14" /></svg>
 );
+
+export const IcSettings = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}>
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M12 3.2v2M12 18.8v2M4.8 12h2M17.2 12h2M6.9 6.9l1.4 1.4M15.7 15.7l1.4 1.4M17.1 6.9l-1.4 1.4M8.3 15.7l-1.4 1.4" />
+  </svg>
+);

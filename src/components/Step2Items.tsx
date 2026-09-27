@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { makeRow, DEMO_ROWS, type GroupRow } from '../pages/PlannerPage';
 import { PALETTE } from '../config';
 import type { Box } from '../lib/pack';
-import { IcBox, IcAlert, IcStack, IcCheckCircle, IcGrid, IcRuler, IcCylinder } from './Icons';
+import { IcBox, IcAlert, IcStack, IcCheckCircle, IcGrid, IcRuler, IcCylinder, IcSettings, IcNext } from './Icons';
 import BoxArt, { ShapeArt } from './BoxArt';
 import { BOX_SIZES, BOX_SOURCE } from '../boxSizes';
 
@@ -123,20 +123,14 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
 
       {/* ---- รายการกลุ่มขนาด ---- */}
       <section className="lp-card p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="lp-sect">
-            <span className="lp-sect-ico"><IcBox /></span>
-            <span className="lp-sect-t">
-              นับจำนวนแต่ละกลุ่มขนาด
-              <span className="lp-sect-s">
-                {edit ? 'โหมดตั้งค่า · ทำล่วงหน้าครั้งเดียว ไม่ใช่งานหน้างาน' : 'ที่หน้างานกด + หรือ − อย่างเดียว ไม่ต้องวัดอะไร'}
-              </span>
+        <div className="lp-sect">
+          <span className="lp-sect-ico"><IcBox /></span>
+          <span className="lp-sect-t">
+            {edit ? 'ตั้งค่ากลุ่มขนาด' : 'นับจำนวนแต่ละกลุ่มขนาด'}
+            <span className="lp-sect-s">
+              {edit ? 'สำหรับผู้ดูแล · ทำล่วงหน้าครั้งเดียว' : 'ที่หน้างานกด + หรือ − อย่างเดียว ไม่ต้องวัดอะไร'}
             </span>
-          </div>
-          <button type="button" onClick={() => setEdit(e => !e)} aria-pressed={edit}
-            className={`lp-btn !min-h-[40px] !text-[13.5px] px-3 shrink-0 border-1.5 ${edit ? 'bg-brand-50 border-brand-500 text-ink' : 'bg-white border-navy-300 text-navy-700'}`}>
-            {edit ? 'เสร็จสิ้น' : 'ตั้งค่าล่วงหน้า'}
-          </button>
+          </span>
         </div>
 
         <div>
@@ -207,31 +201,30 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
           ))}
         </div>
 
-        {edit ? (
-          <div className="mt-3.5 rounded-card border-1.5 border-brand-200 bg-brand-50/40 p-3">
-            <p className="text-[13.5px] font-bold text-ink m-0 mb-0.5">ตั้งค่ากลุ่มขนาด (ทำล่วงหน้าครั้งเดียว)</p>
-            <p className="text-[12px] text-muted m-0 mb-3 leading-snug">
-              กำหนดขนาดของแต่ละกลุ่มไว้ก่อนวันทำงาน พอถึงหน้างานพนักงานจะกดนับอย่างเดียว ไม่ต้องวัดพัสดุ
+        {!edit ? (
+          <>
+            <p className="lp-note mt-3">
+              พัสดุที่ไม่เข้ากลุ่มไหนพอดี ให้เลือกกลุ่มที่ใกล้เคียงที่สุดด้วยสายตา
             </p>
-            <div className="grid grid-cols-2 gap-2">
-          <button type="button" aria-expanded={picker}
-            className={`lp-btn !min-h-[52px] !text-[14.5px] border-1.5 ${picker ? 'bg-brand-50 border-brand-500 text-ink' : 'bg-white border-navy-300 text-navy-700'}`}
-            onClick={() => setPicker(v => !v)}>
-            <IcGrid size={18} /> เลือกขนาดมาตรฐาน
-          </button>
-          <button type="button" className="lp-btn !min-h-[52px] !text-[14.5px] bg-white border-1.5 border-navy-300 text-navy-700"
-            onClick={() => { onRows([...rows, makeRow({}, rows.length)]); setEdit(true); }}>
-            <IcRuler size={18} /> กรอกขนาดเอง
-          </button>
-          <button type="button" className="lp-btn !min-h-[48px] !text-[14px] col-span-2 bg-white border-1.5 border-navy-300 text-navy-700"
-            onClick={() => { onRows([...rows, makeRow({ name: 'พัสดุรูปทรงอื่น', shape: 'cyl' }, rows.length)]); setEdit(true); }}>
-            <IcCylinder size={18} /> พัสดุรูปทรงอื่น · ระบบวัดเป็นกล่องครอบให้
-          </button>
-        </div>
-
-        {picker && (
-          <div className="mt-3 rounded-card border-1.5 border-brand-200 bg-brand-50/50 p-3">
-            <p className="text-[13.5px] font-bold text-ink m-0 mb-0.5">แตะกล่องเพื่อเพิ่มเข้ารายการ</p>
+            <button type="button" onClick={() => setEdit(true)}
+              className="mt-3 w-full flex items-center gap-3 p-3.5 rounded-card border-1.5 border-navy-200
+                         bg-navy-50 hover:border-navy-300 transition text-left">
+              <span className="w-10 h-10 rounded-ctl bg-white border border-line grid place-items-center
+                               text-navy-600 shrink-0"><IcSettings size={20} /></span>
+              <span className="flex-1 min-w-0">
+                <b className="block text-[15px] text-ink leading-tight">ตั้งค่ากลุ่มขนาด</b>
+                <span className="block text-[12.5px] text-muted leading-snug">
+                  เพิ่ม แก้ หรือลบกลุ่มขนาด · สำหรับผู้ดูแล ทำล่วงหน้าครั้งเดียว
+                </span>
+              </span>
+              <span aria-hidden="true" className="text-navy-400 shrink-0"><IcNext size={20} /></span>
+            </button>
+          </>
+        ) : picker ? (
+          <div className="mt-3">
+            <button type="button" onClick={() => setPicker(false)}
+              className="lp-btn-outline !min-h-[44px] !text-[14px] mb-3">← กลับ</button>
+            <p className="text-[14px] font-bold text-ink m-0 mb-0.5">แตะกล่องเพื่อเพิ่มเข้ารายการ</p>
             <p className="text-[12px] text-muted m-0 mb-3 leading-snug">{BOX_SOURCE}</p>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {BOX_SIZES.map((b, i) => (
@@ -249,41 +242,44 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
               ))}
             </div>
           </div>
-        )}
-
-        <div className="flex flex-wrap gap-2 mt-2.5">
-          <button type="button" id="btn-demo" className="lp-btn-outline !min-h-[44px] !text-[14px]"
-            onClick={() => onRows(DEMO_ROWS.map(makeRow))}>ใส่ข้อมูลตัวอย่าง</button>
-          <button type="button" className="lp-btn-outline !min-h-[44px] !text-[14px]"
-            onClick={() => { if (n === 0 || window.confirm('ล้างจำนวนพัสดุทุกกลุ่มเป็น 0 ใช่หรือไม่')) onRows(rows.map(r => ({ ...r, qty: '0' }))); }}>
-            ล้างจำนวนเป็น 0
-          </button>
-          <button type="button" className="lp-btn-outline !min-h-[44px] !text-[14px]" aria-expanded={paste}
-            onClick={() => setPaste(x => !x)}>
-            <IcGrid size={17} /> วางจาก Excel
-          </button>
-        </div>
-
-        {paste && (
+        ) : paste ? (
           <div className="mt-3">
+            <button type="button" onClick={() => setPaste(false)}
+              className="lp-btn-outline !min-h-[44px] !text-[14px] mb-3">← กลับ</button>
             <label className="lp-label" htmlFor="pasteTa">
               คัดลอกจาก Excel แล้ววางที่นี่ (คอลัมน์: ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน)
             </label>
             <textarea id="pasteTa" rows={4} value={pasteTxt} onChange={e => setPasteTxt(e.target.value)}
               className="w-full border-1.5 border-navy-200 rounded-ctl p-2.5 font-mono text-[12px]" />
-            <button type="button" className="lp-btn-outline mt-2" onClick={doPaste}>นำเข้า</button>
-          </div>
-        )}
-
+            <button type="button" className="lp-btn-primary !min-h-[46px] !text-[15px] mt-2" onClick={doPaste}>นำเข้า</button>
           </div>
         ) : (
-          <p className="lp-note mt-3 flex items-start gap-2">
-            <span className="text-navy-400 shrink-0 mt-0.5"><IcBox size={16} /></span>
-            <span>
-              พัสดุที่ไม่เข้ากลุ่มไหนพอดี ให้เลือกกลุ่มที่ใกล้เคียงที่สุดด้วยสายตา ·
-              ต้องการเพิ่มหรือแก้กลุ่มขนาด กด <b>ตั้งค่าล่วงหน้า</b> ด้านบน
-            </span>
-          </p>
+          <div className="mt-3 space-y-2">
+            <AddBtn ico={<IcGrid size={20} />} title="เพิ่มจากกล่องมาตรฐาน"
+              desc="เลือกจากเบอร์กล่องไปรษณีย์ ไม่ต้องวัดเอง" onClick={() => setPicker(true)} />
+            <AddBtn ico={<IcRuler size={20} />} title="เพิ่มกล่องขนาดอื่น"
+              desc="กรอกขนาดเอง สำหรับกล่องที่ไม่เข้าเบอร์"
+              onClick={() => onRows([...rows, makeRow({}, rows.length)])} />
+            <AddBtn ico={<IcCylinder size={20} />} title="เพิ่มพัสดุรูปทรงอื่น"
+              desc="ระบบวัดเป็นกล่องครอบเล็กที่สุดให้"
+              onClick={() => onRows([...rows, makeRow({ name: 'พัสดุรูปทรงอื่น', shape: 'cyl' }, rows.length)])} />
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 text-[13.5px]">
+              <button type="button" id="btn-demo" className="text-navy-600 underline min-h-[36px]"
+                onClick={() => onRows(DEMO_ROWS.map(makeRow))}>ใส่ข้อมูลตัวอย่าง</button>
+              <button type="button" className="text-navy-600 underline min-h-[36px]"
+                onClick={() => setPaste(true)}>นำเข้าจาก Excel</button>
+              <button type="button" className="text-danger underline min-h-[36px]"
+                onClick={() => { if (n === 0 || window.confirm('ล้างจำนวนพัสดุทุกกลุ่มเป็น 0 ใช่หรือไม่')) onRows(rows.map(r => ({ ...r, qty: '0' }))); }}>
+                ล้างจำนวนเป็น 0
+              </button>
+            </div>
+
+            <button type="button" onClick={() => setEdit(false)}
+              className="lp-btn-primary w-full !min-h-[50px] mt-1">
+              <IcCheckCircle size={20} /> ตั้งค่าเสร็จแล้ว กลับไปนับพัสดุ
+            </button>
+          </div>
         )}
 
         <p className="lp-note mt-3">
@@ -303,6 +299,23 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
         </div>
       </div>
     </div>
+  );
+}
+
+function AddBtn({ ico, title, desc, onClick }: {
+  ico: React.ReactNode; title: string; desc: string; onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 rounded-ctl border-1.5 border-navy-200 bg-white
+                 hover:border-brand-500 active:bg-brand-50 transition text-left min-h-[62px]">
+      <span className="w-10 h-10 rounded-ctl bg-navy-100 text-navy-700 grid place-items-center shrink-0">{ico}</span>
+      <span className="flex-1 min-w-0">
+        <b className="block text-[15px] text-ink leading-tight">{title}</b>
+        <span className="block text-[12.5px] text-muted leading-snug">{desc}</span>
+      </span>
+      <span aria-hidden="true" className="text-navy-300 text-[22px] font-bold leading-none shrink-0">+</span>
+    </button>
   );
 }
 
