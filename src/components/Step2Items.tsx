@@ -207,17 +207,17 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
               พัสดุที่ไม่เข้ากลุ่มไหนพอดี ให้เลือกกลุ่มที่ใกล้เคียงที่สุดด้วยสายตา
             </p>
             <button type="button" onClick={() => setEdit(true)}
-              className="mt-3 w-full flex items-center gap-3 p-3.5 rounded-card border-1.5 border-navy-200
-                         bg-navy-50 hover:border-navy-300 transition text-left">
-              <span className="w-10 h-10 rounded-ctl bg-white border border-line grid place-items-center
-                               text-navy-600 shrink-0"><IcSettings size={20} /></span>
+              className="mt-3 w-full flex items-center gap-3 p-3.5 rounded-card border-1.5 border-navy-800
+                         bg-navy-700 hover:bg-navy-600 transition text-left">
+              <span className="w-11 h-11 rounded-ctl bg-brand-500 grid place-items-center
+                               text-navy-900 shrink-0"><IcSettings size={22} /></span>
               <span className="flex-1 min-w-0">
-                <b className="block text-[15px] text-ink leading-tight">ตั้งค่ากลุ่มขนาด</b>
-                <span className="block text-[12.5px] text-muted leading-snug">
+                <b className="block text-[15.5px] text-white leading-tight">ตั้งค่ากลุ่มขนาด</b>
+                <span className="block text-[12.5px] text-navy-200 leading-snug">
                   เพิ่ม แก้ หรือลบกลุ่มขนาด · สำหรับผู้ดูแล ทำล่วงหน้าครั้งเดียว
                 </span>
               </span>
-              <span aria-hidden="true" className="text-navy-400 shrink-0"><IcNext size={20} /></span>
+              <span aria-hidden="true" className="text-brand-400 shrink-0"><IcNext size={22} /></span>
             </button>
           </>
         ) : picker ? (

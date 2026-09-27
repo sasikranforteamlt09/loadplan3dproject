@@ -73,10 +73,10 @@ export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck
             <Num id="bh" label="สูง" unit="ซม." value={dims.h} onChange={v => onDim('h', v)} />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-2.5 mt-3">
+          <div className="grid grid-cols-2 gap-2.5 mt-3">
             <Num id="mkg" label="น้ำหนักบรรทุกสูงสุด" hint="0 = ไม่จำกัด" unit="กก."
               value={dims.mkg} onChange={v => onDim('mkg', v)} />
-            <Num id="rev" label="กันพื้นที่ท้ายรถให้ถุงกระสอบ" unit="ซม."
+            <Num id="rev" label="กันท้ายรถให้ถุงกระสอบ" unit="ซม."
               value={dims.rev} onChange={v => onDim('rev', v)} />
           </div>
 
@@ -178,12 +178,14 @@ function Num({ id, label, hint, unit, value, onChange }: {
   id: string; label: string; hint?: string; unit: string; value: string; onChange: (v: string) => void;
 }) {
   return (
-    <div>
-      <label className="lp-label" htmlFor={id}>
-        {label}
-        {hint && <span className="font-normal text-muted"> · {hint}</span>}
+    <div className="flex flex-col">
+      <label className="lp-label !mb-0 min-h-[34px] flex items-end" htmlFor={id}>
+        <span className="leading-[17px]">
+          {label}
+          {hint && <span className="font-normal text-muted"> · {hint}</span>}
+        </span>
       </label>
-      <div className="lp-field">
+      <div className="lp-field mt-1.5">
         <input id={id} type="number" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} />
         <span className="unit">{unit}</span>
       </div>

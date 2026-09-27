@@ -24,9 +24,9 @@ export class Viewer3D {
     this.ren = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true }); // ให้พิมพ์/จับภาพได้
     this.ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.sc.background = new THREE.Color(0xfafbfc);
-    this.sc.add(new THREE.AmbientLight(0xffffff, 0.72));
-    const d1 = new THREE.DirectionalLight(0xffffff, 0.6); d1.position.set(1, 2, 1.4); this.sc.add(d1);
-    const d2 = new THREE.DirectionalLight(0xffffff, 0.28); d2.position.set(-1, 0.6, -1); this.sc.add(d2);
+    this.sc.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.5); d1.position.set(1, 2, 1.4); this.sc.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffffff, 0.22); d2.position.set(-1, 0.6, -1); this.sc.add(d2);
 
     const down = (x: number, y: number) => { this.drag = true; this.lx = x; this.ly = y; };
     const move = (x: number, y: number) => {
@@ -121,7 +121,7 @@ export class Viewer3D {
       m.position.set(ox + p.x + p.l / 2, oy + p.z + p.h / 2, oz + p.y + p.w / 2);
       G.add(m);
       const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),
-        new THREE.LineBasicMaterial({ color: 0x1b2733, transparent: true, opacity: 0.35 }));
+        new THREE.LineBasicMaterial({ color: 0x0f172a, transparent: true, opacity: 0.9 }));
       e.position.copy(m.position); G.add(e);
       this.cubes.push({ mesh: m, edge: e, mat });
     });
@@ -146,7 +146,7 @@ export class Viewer3D {
       /* ชิ้นล่าสุดที่เพิ่งวาง เน้นให้เรืองขึ้นมา */
       const last = !all && i === n - 1;
       c.mat.emissive.setHex(last ? 0x6b4a00 : 0x000000);
-      (c.edge.material as THREE.LineBasicMaterial).opacity = last ? 1 : 0.35;
+      (c.edge.material as THREE.LineBasicMaterial).opacity = last ? 1 : 0.9;
     });
     this.render();
   }
