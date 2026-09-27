@@ -38,14 +38,17 @@ const INITIAL: GroupRow[] = [
 ].map(makeRow);
 
 /* ชุดข้อมูลสำหรับลองใช้งานเท่านั้น ห้ามนำตัวเลขไปใส่ในเล่ม
-   จงใจให้ขนาดกับน้ำหนักไม่แปรผันตรงกัน เพราะของจริงกล่องเล็กอาจหนักกว่ากล่องใหญ่ */
+   อ้างอิงลักษณะพัสดุจากข้อมูลภาคสนาม: ส่วนใหญ่เป็นกล่องเล็ก จำนวนมาก
+   กล่องใหญ่มีน้อย และน้ำหนักไม่แปรผันตามขนาด กล่องเล็กอาจหนักกว่ากล่องใหญ่
+   พัสดุต่ำกว่า 1 กก. อยู่ในกระสอบ จึงไม่อยู่ในชุดข้อมูลนี้ */
 export const DEMO_ROWS: Omit<GroupRow, 'id' | 'color'>[] = [
-  { name: 'กลุ่ม A', l: '14', w: '20', h: '6', kg: '0.9', qty: '40' },
-  { name: 'กลุ่ม B', l: '17', w: '25', h: '9', kg: '6.5', qty: '35' },
-  { name: 'กลุ่ม C', l: '20', w: '30', h: '11', kg: '2.2', qty: '30' },
-  { name: 'กลุ่ม D', l: '22', w: '35', h: '14', kg: '11', qty: '25' },
-  { name: 'กลุ่ม E', l: '24', w: '40', h: '17', kg: '3.4', qty: '15' },
-  { name: 'กล่องใหญ่', l: '40', w: '60', h: '40', kg: '5', qty: '6' },
+  { name: 'เบอร์ 00 เล็กมาก', l: '14', w: '9.8', h: '6',  kg: '1.1', qty: '180' },
+  { name: 'เบอร์ A เล็ก',     l: '20', w: '14',  h: '6',  kg: '2.8', qty: '150' },
+  { name: 'เบอร์ B เล็ก',     l: '25', w: '17',  h: '9',  kg: '1.4', qty: '120' },
+  { name: 'เบอร์ C กลาง',     l: '30', w: '20',  h: '11', kg: '6.2', qty: '90'  },
+  { name: 'เบอร์ D กลาง',     l: '35', w: '22',  h: '14', kg: '2.5', qty: '60'  },
+  { name: 'เบอร์ E ใหญ่',     l: '40', w: '24',  h: '17', kg: '9.5', qty: '30'  },
+  { name: 'เบอร์ F ใหญ่',     l: '45', w: '30',  h: '20', kg: '4',   qty: '12'  },
 ];
 
 export default function PlannerPage() {
@@ -62,7 +65,7 @@ export default function PlannerPage() {
     l: +dims.l || 0, w: +dims.w || 0, h: +dims.h || 0, maxKg: +dims.mkg || 0,
   }), [dims]);
   const reserve = +dims.rev || 0;
-  const boxValid = box.l > 0 && box.w > 0 && box.h > 0;
+  const boxValid = [box.l, box.w, box.h].every(v => Number.isFinite(v) && v > 0);
 
   /** แก้ค่าใด ๆ ที่กระทบผลลัพธ์ ต้องล้างผลลัพธ์เดิมทิ้ง */
   const invalidate = () => { setPlan(null); setMaxStep(m => Math.min(m, 2)); };
@@ -100,7 +103,31 @@ export default function PlannerPage() {
     invalidate();
   };
 
+  /* ตรวจข้อมูลก่อนคำนวณ ห้ามทิ้งแถวที่ผู้ใช้กรอกไว้เงียบ ๆ
+     และห้ามออกแผนเมื่อยังไม่ทราบพิกัดน้ำหนักบรรทุกจริง */
   const run = () => {
+    const num = (s: string) => s.trim() !== '' && Number.isFinite(Number(s));
+    if (![dims.l, dims.w, dims.h].every(s => num(s) && Number(s) > 0)) {
+      window.alert('กรอกขนาดพื้นที่บรรทุกเป็นตัวเลขมากกว่า 0 ให้ครบทั้งสามด้าน'); return;
+    }
+    if (!num(dims.mkg) || Number(dims.mkg) <= 0) {
+      window.alert('กรอกพิกัดน้ำหนักบรรทุกจริงของรถ มากกว่า 0 กก. ก่อนคำนวณ\n' +
+        'ถ้าไม่ทราบพิกัด ระบบจะตรวจเงื่อนไขน้ำหนักไม่ได้'); return;
+    }
+    if (!num(dims.rev) || Number(dims.rev) < 0 || Number(dims.rev) >= box.l) {
+      window.alert('พื้นที่กันท้ายรถต้องเป็นตัวเลขตั้งแต่ 0 และน้อยกว่าความยาวพื้นที่บรรทุก'); return;
+    }
+    for (const row of rows) {
+      const q = Number(row.qty);
+      if (!num(row.qty) || !Number.isSafeInteger(q) || q < 0) {
+        window.alert('จำนวนของกลุ่ม ' + (row.name || '-') + ' ต้องเป็นจำนวนเต็มตั้งแต่ 0'); return;
+      }
+      if (q === 0) continue;
+      if (![row.l, row.w, row.h, row.kg].every(s => num(s) && Number(s) > 0)) {
+        window.alert('กลุ่ม ' + (row.name || '-') + ' มีจำนวน ' + q + ' ชิ้น แต่ขนาดหรือน้ำหนักยังไม่ครบ\n' +
+          'กรอกให้ครบเป็นตัวเลขมากกว่า 0 มิฉะนั้นพัสดุกลุ่มนี้จะไม่ถูกนำไปคำนวณ'); return;
+      }
+    }
     if (!items.length) { window.alert('ยังไม่ได้ใส่จำนวนพัสดุ (ทุกกลุ่มเป็น 0)'); return; }
     const r = pack(items, box, { allowRotate: rot, rearReserve: reserve });
     setPlan({ ...r, box, reserve });

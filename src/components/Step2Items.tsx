@@ -57,19 +57,33 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
     })
     .map(r => r.name);
 
+  /* อ่านข้อมูลนำเข้าแบบเก็บช่องว่างไว้ ไม่ตัดทิ้ง เพื่อไม่ให้คอลัมน์เลื่อน
+     ต้องครบ 6 คอลัมน์ทุกแถว ถ้ามีแถวใดผิดจะไม่รับทั้งชุด */
   const doPaste = () => {
     const txt = pasteTxt.trim();
     if (!txt) { setPaste(false); return; }
     const add: GroupRow[] = [];
-    txt.split(/\r?\n/).forEach(line => {
-      const c = line.split(/\t|,|\s{2,}/).map(s => s.trim()).filter(s => s !== '');
-      if (c.length >= 5 && !isNaN(+c[1])) {
-        add.push(makeRow(
-          { name: c[0], l: String(+c[1]), w: String(+c[2]), h: String(+c[3]), kg: String(+c[4] || 0), qty: String(+(c[5] || 0)) },
-          rows.length + add.length,
-        ));
+    const lines = txt.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      const c = (line.includes('\t') ? line.split('\t')
+        : line.includes(',') ? line.split(',')
+        : line.trim().split(/\s{2,}/)).map(s => s.trim());
+      if (c.length !== 6 || c.some(s => s === '')) {
+        window.alert('แถวที่ ' + (i + 1) + ': ต้องมีครบ 6 คอลัมน์ (ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน) และห้ามเว้นช่องว่าง');
+        return;
       }
-    });
+      const [l, w, h, kg, qty] = c.slice(1).map(Number);
+      if (![l, w, h, kg, qty].every(Number.isFinite) ||
+          l <= 0 || w <= 0 || h <= 0 || kg <= 0 ||
+          !Number.isSafeInteger(qty) || qty < 0) {
+        window.alert('แถวที่ ' + (i + 1) + ': ขนาดและน้ำหนักต้องมากกว่า 0 และจำนวนต้องเป็นจำนวนเต็มตั้งแต่ 0');
+        return;
+      }
+      add.push(makeRow({ name: c[0], l: String(l), w: String(w), h: String(h),
+        kg: String(kg), qty: String(qty) }, rows.length + add.length));
+    }
     onRows([...rows, ...add]);
     setPasteTxt(''); setPaste(false);
   };
@@ -87,7 +101,7 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
             </span>
           </div>
           <span className={p > 100 ? 'lp-chip-brand' : 'lp-chip-ok'}>
-            {p > 100 ? 'เกินความจุ' : 'อยู่ในความจุ'}
+            {p > 100 ? 'ปริมาตรรวมเกินตู้' : 'ปริมาตรรวมไม่เกินตู้'}
           </span>
         </div>
 
@@ -216,7 +230,8 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
         {!edit ? (
           <>
             <p className="lp-note mt-3">
-              พัสดุที่ไม่เข้ากลุ่มไหนพอดี ให้เลือกกลุ่มที่ใกล้เคียงที่สุดด้วยสายตา
+              พัสดุที่ขนาดไม่ตรงกับกลุ่มใด ให้แยกเป็นกลุ่มใหม่แล้ววัดขนาดและน้ำหนักก่อนคำนวณ ·
+              การเลือกกลุ่มใกล้เคียงด้วยสายตาทำให้ผลการตรวจฐานรองรับและการวางไม่ตรงกับพัสดุจริง
             </p>
             <button type="button" onClick={() => setEdit(true)}
               className="mt-3 w-full flex items-center gap-3 p-3.5 rounded-card border-1.5 border-navy-800
@@ -278,7 +293,10 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
 
             <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 text-[13.5px]">
               <button type="button" id="btn-demo" className="text-navy-600 underline min-h-[36px]"
-                onClick={() => onRows(DEMO_ROWS.map(makeRow))}>ใส่ข้อมูลตัวอย่าง</button>
+                onClick={() => {
+                  if (window.confirm('การใส่ข้อมูลตัวอย่างจะแทนที่กลุ่มขนาดและจำนวนที่กรอกไว้ทั้งหมด ต้องการทำต่อหรือไม่'))
+                    onRows(DEMO_ROWS.map(makeRow));
+                }}>ใส่ข้อมูลตัวอย่าง</button>
               <button type="button" className="text-navy-600 underline min-h-[36px]"
                 onClick={() => setPaste(true)}>นำเข้าจาก Excel</button>
               <button type="button" className="text-danger underline min-h-[36px]"
@@ -295,8 +313,10 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
         )}
 
         <p className="lp-note mt-3">
-          พัสดุที่หนักต่ำกว่า 1 กก. ซึ่งรวมลงถุงกระสอบ อยู่นอกขอบเขตการคำนวณ ·
+          พัสดุที่หนักต่ำกว่า 1 กก. ซึ่งรวมลงถุงกระสอบ อยู่นอกขอบเขตการคำนวณ และไม่ถูกนับในน้ำหนักรวมที่ระบบแสดง ·
           พัสดุที่ไม่ใช่ทรงสี่เหลี่ยมแต่ยังคงรูป ระบบประมาณด้วยกล่องครอบเล็กที่สุด
+          <b className="text-warn"> ซึ่งเป็นการเผื่อพื้นที่ไม่ให้ชนกันเท่านั้น
+          ผลการตรวจฐานรองรับและการวางซ้อนของพัสดุรูปทรงอื่น จึงยังไม่ยืนยันพื้นที่สัมผัสจริง</b>
         </p>
       </section>
 

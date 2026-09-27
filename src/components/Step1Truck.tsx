@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck, onDim, onRot, onNext }: Props) {
-  const valid = box.l > 0 && box.w > 0 && box.h > 0;
+  const valid = [box.l, box.w, box.h].every(v => Number.isFinite(v) && v > 0);
   const nodeRef = useRef(null);
   const isPlaceholder = !!TRUCKS[truck]?.placeholder;
   const vol = (box.l * box.w * box.h) / 1e6;
@@ -74,7 +74,7 @@ export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck
           </div>
 
           <div className="grid grid-cols-2 gap-2.5 mt-3">
-            <Num id="mkg" label="น้ำหนักบรรทุกสูงสุด" hint="0 = ไม่จำกัด" unit="กก."
+            <Num id="mkg" label="น้ำหนักบรรทุกสูงสุด" hint="ต้องกรอกพิกัดจริงก่อนคำนวณ" unit="กก."
               value={dims.mkg} onChange={v => onDim('mkg', v)} />
             <Num id="rev" label="กันท้ายรถให้ถุงกระสอบ" unit="ซม."
               value={dims.rev} onChange={v => onDim('rev', v)} />

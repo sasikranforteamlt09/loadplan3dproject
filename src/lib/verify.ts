@@ -15,6 +15,8 @@ export interface CheckResult {
   violations: number;   // จำนวนที่ละเมิด
   detail: string;       // คำอธิบายผล
   pass: boolean;
+  /** true = รายการนี้ไม่ได้ถูกตรวจ เพราะข้อมูลไม่พอ ไม่ใช่การรับรองว่าถูกต้อง */
+  skipped?: boolean;
 }
 
 export interface VerifyReport {
@@ -63,7 +65,8 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
     }
     results.push({
       no: 1, name: 'วางขนานแกนตู้ ไม่วางเอียง', checked: n, violations: bad,
-      detail: 'ทุกชิ้นมีพิกัดและขนาดเป็นค่าตามแกน x y z ไม่มีมุมหมุนอิสระ', pass: bad === 0,
+      detail: 'เป็นจริงโดยโครงสร้างข้อมูล เพราะไม่มีตัวแปรมุมหมุน ตรวจได้เพียงความสมบูรณ์ของพิกัดและขนาด',
+      pass: bad === 0, skipped: true,
     });
   }
 
@@ -102,13 +105,14 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
   /* --- 4) ไม่เกินน้ำหนักบรรทุก --- */
   {
     const total = placed.reduce((s, p) => s + (p.kg || 0), 0);
-    const over = box.maxKg > 0 && total > box.maxKg + EPS;
+    const has = box.maxKg > 0;
+    const over = has && total > box.maxKg + EPS;
     results.push({
-      no: 4, name: 'ไม่เกินน้ำหนักบรรทุกของรถ', checked: 1, violations: over ? 1 : 0,
-      detail: box.maxKg > 0
+      no: 4, name: 'ไม่เกินน้ำหนักบรรทุกของรถ', checked: has ? 1 : 0, violations: over ? 1 : 0,
+      detail: has
         ? `น้ำหนักรวม ${total.toFixed(1)} กก. จากพิกัด ${box.maxKg} กก.`
-        : `น้ำหนักรวม ${total.toFixed(1)} กก. (ไม่ได้กำหนดพิกัด จึงไม่ตรวจ)`,
-      pass: !over,
+        : `ไม่ได้กำหนดพิกัดน้ำหนักบรรทุก จึงตรวจข้อนี้ไม่ได้ · น้ำหนักรวมที่คำนวณได้ ${total.toFixed(1)} กก.`,
+      pass: !over, skipped: !has,
     });
   }
 
@@ -148,12 +152,15 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
     const light = byKg.slice(0, q), heavy = byKg.slice(-q);
     const mid = (arr: Placed[]) => arr.reduce((s, p) => s + p.x + p.l / 2, 0) / arr.length;
     const dLight = mid(light), dHeavy = mid(heavy);
-    const ok = dHeavy >= dLight - EPS;
+    const ok = n === 0 || dHeavy >= dLight - EPS;
     results.push({
-      no: 7, name: 'ของหนักอยู่ด้านท้ายรถ (ใกล้ประตู)', checked: n, violations: ok ? 0 : 1,
-      detail: `กลุ่มหนักสุด 25% อยู่ลึกเฉลี่ย ${dHeavy.toFixed(1)} ซม. · ` +
-              `กลุ่มเบาสุด 25% อยู่ลึกเฉลี่ย ${dLight.toFixed(1)} ซม. (ยิ่งมากยิ่งใกล้ประตู)`,
-      pass: ok,
+      no: 7, name: 'ของหนักอยู่ด้านท้ายรถ (เกณฑ์ค่าเฉลี่ย)', checked: n, violations: ok ? 0 : 1,
+      detail: n === 0
+        ? 'ไม่มีพัสดุที่วางได้ จึงไม่มีข้อมูลให้ตรวจ ไม่ได้แปลว่าบรรจุสำเร็จ'
+        : `ค่าเฉลี่ยความลึกของกลุ่มหนักสุด 25% เท่ากับ ${dHeavy.toFixed(1)} ซม. · ` +
+          `กลุ่มเบาสุด 25% เท่ากับ ${dLight.toFixed(1)} ซม. (ยิ่งมากยิ่งใกล้ประตู) · ` +
+          'เป็นการตรวจระดับค่าเฉลี่ย ไม่ได้ยืนยันว่าพัสดุหนักทุกชิ้นอยู่ใกล้ประตูกว่าพัสดุเบาทุกชิ้น',
+      pass: ok, skipped: n === 0,
     });
   }
 
@@ -170,11 +177,14 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
     }
     results.push({
       no: 8, name: 'ลำดับการวางทำตามได้จริง (ของล่างต้องวางก่อน)', checked: rel, violations: bad,
-      detail: `ตรวจว่าทุกชิ้นถูกวางหลังกล่องที่รองรับฐานของตน ${rel.toLocaleString('th-TH')} ความสัมพันธ์`,
+      detail: `ตรวจว่าทุกชิ้นถูกวางหลังกล่องที่รองรับฐานของตน ${rel.toLocaleString('th-TH')} ความสัมพันธ์ · ` +
+              'ไม่ได้ตรวจว่ามีทางเคลื่อนพัสดุเข้าไปวางได้จริง',
       pass: bad === 0,
     });
   }
 
   const ms = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
+  /* allPass หมายถึง ไม่พบการละเมิดในรายการที่ตรวจได้จริงเท่านั้น
+     รายการที่ skipped = true คือรายการที่ตรวจไม่ได้ ไม่ใช่การรับรองว่าถูกต้อง */
   return { results, allPass: results.every(r => r.pass), items: n, ms };
 }

@@ -123,7 +123,8 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
             <p className="text-[14px] leading-snug text-ink m-0">
               <b className="text-[15.5px]">มีพัสดุที่ระบบวางไม่ได้ {r.failed.length} ชิ้น</b><br />
               {Object.entries(why).map(e => e[0] + ' ' + e[1] + ' ชิ้น').join(' · ')}<br />
-              แปลว่าพัสดุชุดนี้เกินความจุของพื้นที่บรรทุก ต้องแบ่งรอบหรือเพิ่มคันรถ
+              ระบบยังหาแผนที่วางพัสดุชุดนี้ได้ครบไม่สำเร็จ ภายใต้ข้อมูลและเงื่อนไขที่กำหนด ·
+              ผลนี้ยังไม่ยืนยันว่าไม่มีวิธีจัดวางอื่นที่วางได้ครบ
             </p>
           </div>
         ) : (
@@ -154,7 +155,8 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
             — บอกว่ากองที่จัดวาง<b>แน่น</b>แค่ไหน
           </p>
           <p className="text-[13px] text-muted m-0 mt-1.5 leading-snug">
-            ถ้าเทียบกับพื้นที่บรรทุกทั้งคัน ใช้ไป <b className="text-navy-700">{r.Uzone.toFixed(2)}%</b> ·
+            ถ้าเทียบกับพื้นที่บรรทุกทั้งคัน ใช้ไป{' '}
+            <b className="text-navy-700">{(r.volWhole > 0 ? r.volItems / r.volWhole * 100 : 0).toFixed(2)}%</b> ·
             ใช้ความลึกไป {r.usedL.toFixed(0)} จาก {r.box.l} ซม.
           </p>
         </div>
@@ -219,7 +221,9 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
           </span>
           <p className="text-[14px] leading-snug text-ink m-0">
             {report.allPass
-              ? <b>ผ่านครบทุกเงื่อนไข ไม่พบการละเมิด</b>
+              ? <><b>ไม่พบการละเมิดในรายการที่โปรแกรมตรวจได้</b>
+                  {report.results.some(c => c.skipped) &&
+                    <> · มี {report.results.filter(c => c.skipped).length} รายการที่ตรวจไม่ได้ ดูคอลัมน์ผลในตาราง</>}</>
               : <b>พบการละเมิดเงื่อนไข กรุณาตรวจรายการด้านล่าง</b>}
           </p>
         </div>
@@ -243,8 +247,9 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
                   </td>
                   <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">{c.checked.toLocaleString('th-TH')}</td>
                   <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">{c.violations.toLocaleString('th-TH')}</td>
-                  <td className={`py-2 pl-2 text-center font-bold whitespace-nowrap ${c.pass ? 'text-ok' : 'text-danger'}`}>
-                    {c.pass ? 'ผ่าน' : 'ไม่ผ่าน'}
+                  <td className={`py-2 pl-2 text-center font-bold whitespace-nowrap ${
+                    c.skipped ? 'text-muted' : c.pass ? 'text-ok' : 'text-danger'}`}>
+                    {c.skipped ? 'ไม่ได้ตรวจ' : c.pass ? 'ไม่พบละเมิด' : 'พบละเมิด'}
                   </td>
                 </tr>
               ))}
