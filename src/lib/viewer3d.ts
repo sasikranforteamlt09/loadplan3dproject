@@ -117,7 +117,11 @@ export class Viewer3D {
     this.cubes = [];
     placed.forEach(p => {
       const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(p.color) });
-      const m = new THREE.Mesh(new THREE.BoxGeometry(p.l, p.h, p.w), mat);
+      /* หดกล่องที่วาดลงเล็กน้อย เพื่อให้เห็นร่องระหว่างกล่องที่ติดกัน
+         เป็นการปรับเฉพาะการแสดงผล พิกัดจริงที่ใช้คำนวณไม่เปลี่ยน */
+      const gap = Math.min(1.2, Math.min(p.l, p.w, p.h) * 0.12);
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.max(0.1, p.l - gap), Math.max(0.1, p.h - gap), Math.max(0.1, p.w - gap)), mat);
       m.position.set(ox + p.x + p.l / 2, oy + p.z + p.h / 2, oz + p.y + p.w / 2);
       G.add(m);
       const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),

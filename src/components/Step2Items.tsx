@@ -133,6 +133,18 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
           </span>
         </div>
 
+        {edit && (
+          <div className="flex gap-2.5 items-start bg-warn-bg border-1.5 border-brand-200 rounded-ctl p-3 mb-3.5">
+            <span className="text-warn shrink-0 mt-0.5"><IcAlert size={20} /></span>
+            <p className="text-[13px] leading-snug text-ink m-0">
+              <b>น้ำหนักที่ใส่ไว้เป็นค่าตั้งต้น ไม่ใช่ค่าที่ชั่งจริง</b> ·
+              กล่องเล็กอาจหนักกว่ากล่องใหญ่ได้ ระบบเรียงลำดับตามน้ำหนัก ไม่ใช่ขนาด
+              จึงต้องสุ่มชั่งตัวอย่างกลุ่มละ 3–5 ชิ้นที่หน้างานแล้วแก้ตัวเลขก่อน
+              จึงจะนำผลไปใช้อ้างอิงในเล่มได้
+            </p>
+          </div>
+        )}
+
         <div>
           {rows.map(r => (
             <div key={r.id} className="lp-row flex-wrap">
