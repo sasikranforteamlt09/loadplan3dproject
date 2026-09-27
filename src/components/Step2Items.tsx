@@ -34,6 +34,19 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
     )]);
   };
 
+  /** ทำสำเนากลุ่ม ใช้เมื่อพัสดุขนาดเดียวกันมีน้ำหนักต่างกันมาก
+      คัดลอกขนาดมาให้ ผู้ดูแลแก้เฉพาะน้ำหนักและชื่อ จำนวนเริ่มที่ 0 เสมอ */
+  const dup = (id: number) => {
+    const i = rows.findIndex(r => r.id === id);
+    if (i < 0) return;
+    const r = rows[i];
+    const copy = makeRow(
+      { name: r.name + ' (น้ำหนักอื่น)', l: r.l, w: r.w, h: r.h, kg: r.kg, qty: '0', shape: r.shape },
+      rows.length,
+    );
+    onRows([...rows.slice(0, i + 1), copy, ...rows.slice(i + 1)]);
+  };
+
   const set = (id: number, k: keyof GroupRow, v: string) =>
     onRows(rows.map(r => (r.id === id ? { ...r, [k]: v } : r)));
   /** ทรงกระบอก: เส้นผ่านศูนย์กลางกำหนดทั้งด้านยาวและด้านกว้างของกล่องครอบ */
@@ -218,9 +231,14 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
                       <Field label="กก." aria={`น้ำหนักต่อชิ้นของ ${r.name}`} value={r.kg} onChange={v => set(r.id, 'kg', v)} />
                     </div>
                   )}
-                  <button type="button" onClick={() => onRows(rows.filter(x => x.id !== r.id))}
-                    className="mt-2 min-h-[40px] px-3 rounded-ctl border-1.5 border-danger/30 text-danger bg-white
-                               text-[13px] font-bold hover:bg-danger-bg">ลบกลุ่มนี้</button>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <button type="button" onClick={() => dup(r.id)}
+                      className="min-h-[40px] px-3 rounded-ctl border-1.5 border-navy-300 text-navy-700 bg-white
+                                 text-[13px] font-bold hover:bg-navy-50">+ เพิ่มกลุ่มน้ำหนักอื่น ขนาดเดิม</button>
+                    <button type="button" onClick={() => onRows(rows.filter(x => x.id !== r.id))}
+                      className="min-h-[40px] px-3 rounded-ctl border-1.5 border-danger/30 text-danger bg-white
+                                 text-[13px] font-bold hover:bg-danger-bg">ลบกลุ่มนี้</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -252,6 +270,11 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
             <button type="button" onClick={() => setPicker(false)}
               className="lp-btn-outline !min-h-[44px] !text-[14px] mb-3">← กลับ</button>
             <p className="text-[14px] font-bold text-ink m-0 mb-0.5">แตะกล่องเพื่อเพิ่มเข้ารายการ</p>
+            <p className="text-[12.5px] text-muted m-0 mb-1.5 leading-snug">
+              ถ้ามีกลุ่มขนาดนั้นอยู่แล้ว ระบบจะบวกจำนวนเข้ากลุ่มเดิม ·
+              ถ้าต้องการกลุ่มขนาดเดิมแต่น้ำหนักต่างกัน ให้กด <b>← กลับ</b> แล้วใช้ปุ่ม
+              <b> + เพิ่มกลุ่มน้ำหนักอื่น ขนาดเดิม</b> ที่ใต้กลุ่มนั้น
+            </p>
             <p className="text-[12px] text-muted m-0 mb-3 leading-snug">{BOX_SOURCE}</p>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {BOX_SIZES.map((b, i) => (
