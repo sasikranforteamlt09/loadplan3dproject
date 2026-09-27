@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Viewer3DCanvas, { type Viewer3DHandle } from './Viewer3DCanvas';
 import { IcCheckCircle, IcAlert, IcBox, IcPercent, IcWeight, IcDepth, IcCube3D, IcList, IcPrint,
   IcPlay, IcPause, IcPrev, IcNext, IcRewind } from './Icons';
 import { drawWalls } from '../lib/wallview';
+import { verify } from '../lib/verify';
 import type { Plan } from '../pages/PlannerPage';
 
 export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () => void }) {
@@ -18,6 +19,12 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
   const imgRef = useRef<HTMLImageElement>(null);
   const viewer = useRef<Viewer3DHandle>(null);
   const wallCv = useRef<HTMLCanvasElement>(null);
+
+  /* ตรวจสอบแผนด้วยโปรแกรมตรวจอิสระ (src/lib/verify.ts) ที่ไม่ได้ใช้โค้ดร่วมกับตัวคำนวณ */
+  const report = useMemo(
+    () => verify(plan.placed, plan.box, plan.reserve),
+    [plan],
+  );
   const r = plan;
 
   /* วาดมุมมองรายผนังเมื่อเปิดแท็บ และเมื่อขนาดหน้าจอเปลี่ยน */
@@ -190,6 +197,65 @@ export default function Step3Result({ plan, onBack }: { plan: Plan; onBack: () =
             เวลาที่ระบบใช้คำนวณ {r.ms < 1000 ? r.ms.toFixed(0) + ' มิลลิวินาที' : (r.ms / 1000).toFixed(2) + ' วินาที'}
           </p>
         </details>
+      </section>
+
+      {/* ---- ผลการตรวจสอบเงื่อนไขด้วยโปรแกรมตรวจอิสระ ---- */}
+      <section className="lp-card p-4">
+        <div className="lp-sect">
+          <span className="lp-sect-ico"><IcCheckCircle /></span>
+          <span className="lp-sect-t">
+            ผลตรวจสอบเงื่อนไขการจัดวาง
+            <span className="lp-sect-s">
+              ตรวจด้วยโปรแกรมตรวจอิสระ ไม่ได้ใช้โค้ดร่วมกับตัวคำนวณ · ตรวจ {report.items.toLocaleString('th-TH')} ชิ้น
+              ใช้เวลา {report.ms < 1000 ? report.ms.toFixed(0) + ' มิลลิวินาที' : (report.ms / 1000).toFixed(2) + ' วินาที'}
+            </span>
+          </span>
+        </div>
+
+        <div className={`flex gap-2.5 items-start rounded-ctl p-3 mb-3 border-1.5 ${
+          report.allPass ? 'bg-ok-bg border-ok/30' : 'bg-danger-bg border-danger/30'}`}>
+          <span className={`shrink-0 mt-0.5 ${report.allPass ? 'text-ok' : 'text-danger'}`}>
+            {report.allPass ? <IcCheckCircle size={20} /> : <IcAlert size={20} />}
+          </span>
+          <p className="text-[14px] leading-snug text-ink m-0">
+            {report.allPass
+              ? <b>ผ่านครบทุกเงื่อนไข ไม่พบการละเมิด</b>
+              : <b>พบการละเมิดเงื่อนไข กรุณาตรวจรายการด้านล่าง</b>}
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px] border-collapse">
+            <thead>
+              <tr className="text-left text-muted border-b-1.5 border-line">
+                <th className="py-2 pr-2 font-semibold">เงื่อนไข</th>
+                <th className="py-2 px-2 font-semibold text-right whitespace-nowrap">จำนวนที่ตรวจ</th>
+                <th className="py-2 px-2 font-semibold text-right whitespace-nowrap">พบละเมิด</th>
+                <th className="py-2 pl-2 font-semibold text-center whitespace-nowrap">ผล</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.results.map(c => (
+                <tr key={c.no} className="border-b border-line align-top">
+                  <td className="py-2 pr-2">
+                    <b className="text-ink">{c.no}. {c.name}</b>
+                    <span className="block text-[11.5px] text-muted leading-snug">{c.detail}</span>
+                  </td>
+                  <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">{c.checked.toLocaleString('th-TH')}</td>
+                  <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">{c.violations.toLocaleString('th-TH')}</td>
+                  <td className={`py-2 pl-2 text-center font-bold whitespace-nowrap ${c.pass ? 'text-ok' : 'text-danger'}`}>
+                    {c.pass ? 'ผ่าน' : 'ไม่ผ่าน'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="lp-note mt-3">
+          โปรแกรมตรวจนี้เขียนขึ้นใหม่จากนิยามเงื่อนไขในปริญญานิพนธ์ รับเข้ามาเพียงพิกัดสุดท้ายของพัสดุแต่ละชิ้น
+          แล้วคำนวณซ้ำเองทั้งหมด จึงเป็นการตรวจสอบโดยอิสระ ไม่ใช่การให้ตัวคำนวณตรวจผลงานของตนเอง
+        </p>
       </section>
 
       <section className="lp-card p-4 plancard">
