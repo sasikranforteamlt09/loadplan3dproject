@@ -73,33 +73,63 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
 
   /* อ่านข้อมูลนำเข้าแบบเก็บช่องว่างไว้ ไม่ตัดทิ้ง เพื่อไม่ให้คอลัมน์เลื่อน
      ต้องครบ 6 คอลัมน์ทุกแถว ถ้ามีแถวใดผิดจะไม่รับทั้งชุด */
-  const doPaste = () => {
-    const txt = pasteTxt.trim();
-    if (!txt) { setPaste(false); return; }
+  /** ตรวจและนำเข้าข้อมูลที่แยกคอลัมน์แล้ว (ใช้ร่วมกันทั้งวางข้อความและอ่านไฟล์)
+      ต้องครบ 6 คอลัมน์ทุกแถว ถ้ามีแถวใดผิดจะไม่รับทั้งชุด */
+  const importCells = (lines: string[][], rowOffset = 0): boolean => {
     const add: GroupRow[] = [];
-    const lines = txt.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      const c = (line.includes('\t') ? line.split('\t')
-        : line.includes(',') ? line.split(',')
-        : line.trim().split(/\s{2,}/)).map(s => s.trim());
-      if (c.length !== 6 || c.some(s => s === '')) {
-        void notify('นำเข้าข้อมูลไม่ได้', 'แถวที่ ' + (i + 1) + ': ต้องมีครบ 6 คอลัมน์ (ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน) และห้ามเว้นช่องว่าง');
-        return;
+      const c = lines[i].map(s => s.trim());
+      if (c.every(s => s === '')) continue;
+      const no = i + 1 + rowOffset;
+      if (c.length < 6 || c.slice(0, 6).some(s => s === '') || c.slice(6).some(s => s !== '')) {
+        void notify('นำเข้าข้อมูลไม่ได้', 'แถวที่ ' + no + ': ต้องมีครบ 6 คอลัมน์ (ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน) และห้ามเว้นช่องว่าง');
+        return false;
       }
-      const [l, w, h, kg, qty] = c.slice(1).map(Number);
+      const [l, w, h, kg, qty] = c.slice(1, 6).map(Number);
       if (![l, w, h, kg, qty].every(Number.isFinite) ||
           l <= 0 || w <= 0 || h <= 0 || kg <= 0 ||
           !Number.isSafeInteger(qty) || qty < 0) {
-        void notify('นำเข้าข้อมูลไม่ได้', 'แถวที่ ' + (i + 1) + ': ขนาดและน้ำหนักต้องมากกว่า 0 และจำนวนต้องเป็นจำนวนเต็มตั้งแต่ 0');
-        return;
+        void notify('นำเข้าข้อมูลไม่ได้', 'แถวที่ ' + no + ': ขนาดและน้ำหนักต้องมากกว่า 0 และจำนวนต้องเป็นจำนวนเต็มตั้งแต่ 0');
+        return false;
       }
       add.push(makeRow({ name: c[0], l: String(l), w: String(w), h: String(h),
         kg: String(kg), qty: String(qty) }, rows.length + add.length));
     }
+    if (!add.length) { void notify('ไม่พบข้อมูล', 'ไม่พบแถวข้อมูลที่นำเข้าได้ ตรวจว่าใส่ข้อมูลตั้งแต่แถวที่ 2 เป็นต้นไป'); return false; }
     onRows([...rows, ...add]);
-    setPasteTxt(''); setPaste(false);
+    return true;
+  };
+
+  const doPaste = () => {
+    const txt = pasteTxt.trim();
+    if (!txt) { setPaste(false); return; }
+    const lines = txt.split(/\r?\n/).map(line =>
+      line.includes('\t') ? line.split('\t')
+        : line.includes(',') ? line.split(',')
+        : line.trim().split(/\s{2,}/));
+    if (importCells(lines)) { setPasteTxt(''); setPaste(false); }
+  };
+
+  /** อ่านไฟล์ .xlsx (ชีตแรก) โหลดไลบรารีเมื่อใช้งานเท่านั้น เพื่อไม่ให้หน้าแรกช้าลง */
+  const doFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!/\.xlsx$/i.test(file.name)) {
+      void notify('ไฟล์ไม่รองรับ', 'รองรับเฉพาะไฟล์ .xlsx ถ้าเป็น .xls หรือ .csv ให้เปิดใน Excel แล้วบันทึกเป็น .xlsx ก่อน');
+      return;
+    }
+    try {
+      const { readSheet } = await import('read-excel-file/universal');
+      const data = (await readSheet(file)) as unknown[][];
+      let cells = data.map(r => r.map(v => (v === null || v === undefined ? '' : String(v))));
+      /* ถ้าแถวแรกเป็นหัวตาราง (คอลัมน์ 2-6 ไม่ใช่ตัวเลข) ให้ข้าม */
+      let off = 0;
+      if (cells.length && cells[0].slice(1, 6).some(s => s.trim() === '' || !Number.isFinite(Number(s)))) {
+        cells = cells.slice(1); off = 1;
+      }
+      if (importCells(cells, off)) { setPaste(false); }
+    } catch {
+      void notify('อ่านไฟล์ไม่ได้', 'ไฟล์อาจเสียหรือมีรหัสผ่านป้องกัน ลองเปิดใน Excel แล้วบันทึกใหม่เป็น .xlsx');
+    }
   };
 
   return (
@@ -303,6 +333,16 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
             <textarea id="pasteTa" rows={4} value={pasteTxt} onChange={e => setPasteTxt(e.target.value)}
               className="w-full border-1.5 border-navy-200 rounded-ctl p-2.5 font-mono text-[12px]" />
             <button type="button" className="lp-btn-primary !min-h-[46px] !text-[15px] mt-2" onClick={doPaste}>นำเข้า</button>
+            <div className="mt-4 pt-4 border-t border-line">
+              <p className="text-[14px] font-bold text-ink m-0 mb-1">หรือเลือกไฟล์ Excel (.xlsx)</p>
+              <p className="text-[12.5px] text-muted m-0 mb-2 leading-snug">
+                อ่านชีตแรก คอลัมน์: ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน · แถวหัวตารางจะถูกข้ามให้เอง
+              </p>
+              <input id="xlsxFile" type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; void doFile(f); }}
+                className="block w-full text-[14px] file:mr-3 file:min-h-[46px] file:px-4 file:rounded-ctl file:border-1.5 file:border-navy-300 file:bg-white file:text-navy-700 file:font-bold" />
+            </div>
           </div>
         ) : (
           <div className="mt-3 space-y-2">
