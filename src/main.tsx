@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import PlannerPage from './pages/PlannerPage';
+import DialogHost from './components/Dialog';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -13,6 +14,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/app" element={<PlannerPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <DialogHost />
     </BrowserRouter>
   </React.StrictMode>,
 );

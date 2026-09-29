@@ -1,3 +1,4 @@
+import { notify } from '../components/Dialog';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { AppHeader } from '../components/Layout';
 import Stepper from '../components/Stepper';
@@ -65,7 +66,6 @@ export default function PlannerPage() {
     l: +dims.l || 0, w: +dims.w || 0, h: +dims.h || 0, maxKg: +dims.mkg || 0,
   }), [dims]);
   const reserve = +dims.rev || 0;
-  const boxValid = [box.l, box.w, box.h].every(v => Number.isFinite(v) && v > 0);
 
   /** แก้ค่าใด ๆ ที่กระทบผลลัพธ์ ต้องล้างผลลัพธ์เดิมทิ้ง */
   const invalidate = () => { setPlan(null); setMaxStep(m => Math.min(m, 2)); };
@@ -78,8 +78,27 @@ export default function PlannerPage() {
     return o.l > 0 && o.w > 0 && o.h > 0 && o.qty > 0 ? [o] : [];
   }), [rows]);
 
+  const [err, setErr] = useState<null | 'dims' | 'mkg' | 'rev'>(null);
+
+  /** ตรวจข้อมูลรถก่อนออกจากขั้นที่ 1 เพื่อไม่ให้ผู้ใช้ไปเจอข้อความเตือนตอนอยู่หน้าพัสดุ */
+  const checkTruck = (): boolean => {
+    const num = (s: string) => s.trim() !== '' && Number.isFinite(Number(s));
+    let bad: null | { f: 'dims' | 'mkg' | 'rev'; t: string; m: string } = null;
+    if (![dims.l, dims.w, dims.h].every(s => num(s) && Number(s) > 0)) {
+      bad = { f: 'dims', t: 'ขนาดตู้ยังไม่ครบ', m: 'กรอกความยาว ความกว้าง และความสูงภายในตู้เป็นตัวเลขมากกว่า 0 ให้ครบทั้งสามด้าน' };
+    } else if (!num(dims.mkg) || Number(dims.mkg) <= 0) {
+      bad = { f: 'mkg', t: 'ยังไม่ได้กรอกน้ำหนักบรรทุกสูงสุด', m: 'กรอกพิกัดน้ำหนักบรรทุกจริงของรถ (กิโลกรัม) ก่อนไปขั้นตอนถัดไป ถ้าไม่ทราบพิกัด ระบบจะตรวจเงื่อนไขน้ำหนักไม่ได้' };
+    } else if (!num(dims.rev) || Number(dims.rev) < 0 || Number(dims.rev) >= Number(dims.l)) {
+      bad = { f: 'rev', t: 'ค่าพื้นที่กันท้ายรถไม่ถูกต้อง', m: 'ใส่ตัวเลขตั้งแต่ 0 และน้อยกว่าความยาวพื้นที่บรรทุก ถ้าไม่ต้องเว้นให้ใส่ 0' };
+    }
+    if (!bad) { setErr(null); return true; }
+    setErr(bad.f); setStep(1); window.scrollTo(0, 0);
+    void notify(bad.t, bad.m);
+    return false;
+  };
+
   const go = (n: number) => {
-    if (n >= 2 && !boxValid) { window.alert('ขนาดตู้ไม่ถูกต้อง'); setStep(1); return; }
+    if (n >= 2 && !checkTruck()) return;
     if (n === 3 && !plan) return;
     setStep(n);
     setMaxStep(m => Math.max(m, n));
@@ -96,6 +115,7 @@ export default function PlannerPage() {
   const setDim = (k: keyof typeof dims, v: string) => {
     setDims(d => {
       const nd = { ...d, [k]: v };
+      setErr(null);
       const t = TRUCKS[truck];
       if (t && (+nd.l !== t.l || +nd.w !== t.w || +nd.h !== t.h)) setTruck('custom');
       return nd;
@@ -107,28 +127,19 @@ export default function PlannerPage() {
      และห้ามออกแผนเมื่อยังไม่ทราบพิกัดน้ำหนักบรรทุกจริง */
   const run = () => {
     const num = (s: string) => s.trim() !== '' && Number.isFinite(Number(s));
-    if (![dims.l, dims.w, dims.h].every(s => num(s) && Number(s) > 0)) {
-      window.alert('กรอกขนาดพื้นที่บรรทุกเป็นตัวเลขมากกว่า 0 ให้ครบทั้งสามด้าน'); return;
-    }
-    if (!num(dims.mkg) || Number(dims.mkg) <= 0) {
-      window.alert('กรอกพิกัดน้ำหนักบรรทุกจริงของรถ มากกว่า 0 กก. ก่อนคำนวณ\n' +
-        'ถ้าไม่ทราบพิกัด ระบบจะตรวจเงื่อนไขน้ำหนักไม่ได้'); return;
-    }
-    if (!num(dims.rev) || Number(dims.rev) < 0 || Number(dims.rev) >= box.l) {
-      window.alert('พื้นที่กันท้ายรถต้องเป็นตัวเลขตั้งแต่ 0 และน้อยกว่าความยาวพื้นที่บรรทุก'); return;
-    }
+    if (!checkTruck()) return;
     for (const row of rows) {
       const q = Number(row.qty);
       if (!num(row.qty) || !Number.isSafeInteger(q) || q < 0) {
-        window.alert('จำนวนของกลุ่ม ' + (row.name || '-') + ' ต้องเป็นจำนวนเต็มตั้งแต่ 0'); return;
+        void notify('ตรวจข้อมูลอีกครั้ง', 'จำนวนของกลุ่ม ' + (row.name || '-') + ' ต้องเป็นจำนวนเต็มตั้งแต่ 0'); return;
       }
       if (q === 0) continue;
       if (![row.l, row.w, row.h, row.kg].every(s => num(s) && Number(s) > 0)) {
-        window.alert('กลุ่ม ' + (row.name || '-') + ' มีจำนวน ' + q + ' ชิ้น แต่ขนาดหรือน้ำหนักยังไม่ครบ\n' +
+        void notify('ตรวจข้อมูลอีกครั้ง', 'กลุ่ม ' + (row.name || '-') + ' มีจำนวน ' + q + ' ชิ้น แต่ขนาดหรือน้ำหนักยังไม่ครบ\n' +
           'กรอกให้ครบเป็นตัวเลขมากกว่า 0 มิฉะนั้นพัสดุกลุ่มนี้จะไม่ถูกนำไปคำนวณ'); return;
       }
     }
-    if (!items.length) { window.alert('ยังไม่ได้ใส่จำนวนพัสดุ (ทุกกลุ่มเป็น 0)'); return; }
+    if (!items.length) { void notify('ตรวจข้อมูลอีกครั้ง', 'ยังไม่ได้ใส่จำนวนพัสดุ (ทุกกลุ่มเป็น 0)'); return; }
     const r = pack(items, box, { allowRotate: rot, rearReserve: reserve });
     setPlan({ ...r, box, reserve });
     setStep(3); setMaxStep(3); window.scrollTo(0, 0);
@@ -147,6 +158,7 @@ export default function PlannerPage() {
             truck={truck} dims={dims} rot={rot} box={box} reserve={reserve}
             onPickTruck={pickTruck} onDim={setDim}
             onRot={v => { setRot(v); invalidate(); }}
+            err={err}
             onNext={() => go(2)}
           />
         )}

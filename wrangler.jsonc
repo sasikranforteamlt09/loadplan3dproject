@@ -1,4 +1,5 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "loadplan3dproject",
   "compatibility_date": "2025-01-01",
   "assets": {

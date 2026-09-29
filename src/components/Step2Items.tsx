@@ -1,3 +1,4 @@
+import { notify, ask } from './Dialog';
 import { useState } from 'react';
 import { makeRow, DEMO_ROWS, type GroupRow } from '../pages/PlannerPage';
 import { PALETTE } from '../config';
@@ -84,14 +85,14 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
         : line.includes(',') ? line.split(',')
         : line.trim().split(/\s{2,}/)).map(s => s.trim());
       if (c.length !== 6 || c.some(s => s === '')) {
-        window.alert('แถวที่ ' + (i + 1) + ': ต้องมีครบ 6 คอลัมน์ (ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน) และห้ามเว้นช่องว่าง');
+        void notify('นำเข้าข้อมูลไม่ได้', 'แถวที่ ' + (i + 1) + ': ต้องมีครบ 6 คอลัมน์ (ชื่อ ยาว กว้าง สูง น้ำหนัก จำนวน) และห้ามเว้นช่องว่าง');
         return;
       }
       const [l, w, h, kg, qty] = c.slice(1).map(Number);
       if (![l, w, h, kg, qty].every(Number.isFinite) ||
           l <= 0 || w <= 0 || h <= 0 || kg <= 0 ||
           !Number.isSafeInteger(qty) || qty < 0) {
-        window.alert('แถวที่ ' + (i + 1) + ': ขนาดและน้ำหนักต้องมากกว่า 0 และจำนวนต้องเป็นจำนวนเต็มตั้งแต่ 0');
+        void notify('นำเข้าข้อมูลไม่ได้', 'แถวที่ ' + (i + 1) + ': ขนาดและน้ำหนักต้องมากกว่า 0 และจำนวนต้องเป็นจำนวนเต็มตั้งแต่ 0');
         return;
       }
       add.push(makeRow({ name: c[0], l: String(l), w: String(w), h: String(h),
@@ -316,14 +317,14 @@ export default function Step2Items({ rows, box, onRows, onBack, onRun }: Props) 
 
             <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1.5 text-[13.5px]">
               <button type="button" id="btn-demo" className="text-navy-600 underline min-h-[36px]"
-                onClick={() => {
-                  if (window.confirm('การใส่ข้อมูลตัวอย่างจะแทนที่กลุ่มขนาดและจำนวนที่กรอกไว้ทั้งหมด ต้องการทำต่อหรือไม่'))
+                onClick={async () => {
+                  if (await ask('ใส่ข้อมูลตัวอย่าง?', 'ข้อมูลตัวอย่างจะแทนที่กลุ่มขนาดและจำนวนที่กรอกไว้ทั้งหมด', { okLabel: 'ใส่ข้อมูลตัวอย่าง' }))
                     onRows(DEMO_ROWS.map(makeRow));
                 }}>ใส่ข้อมูลตัวอย่าง</button>
               <button type="button" className="text-navy-600 underline min-h-[36px]"
                 onClick={() => setPaste(true)}>นำเข้าจาก Excel</button>
               <button type="button" className="text-danger underline min-h-[36px]"
-                onClick={() => { if (n === 0 || window.confirm('ล้างจำนวนพัสดุทุกกลุ่มเป็น 0 ใช่หรือไม่')) onRows(rows.map(r => ({ ...r, qty: '0' }))); }}>
+                onClick={async () => { if (n === 0 || await ask('ล้างจำนวนพัสดุ?', 'จำนวนพัสดุทุกกลุ่มจะเปลี่ยนเป็น 0 ขนาดและน้ำหนักที่ตั้งไว้ยังอยู่ครบ', { okLabel: 'ล้างเป็น 0', danger: true })) onRows(rows.map(r => ({ ...r, qty: '0' }))); }}>
                 ล้างจำนวนเป็น 0
               </button>
             </div>

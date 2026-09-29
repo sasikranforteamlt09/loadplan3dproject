@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Viewer3DCanvas from './Viewer3DCanvas';
 import { TRUCKS } from '../config';
 import type { Box } from '../lib/pack';
@@ -13,14 +13,23 @@ interface Props {
   onPickTruck: (t: string) => void;
   onDim: (k: 'l' | 'w' | 'h' | 'mkg' | 'rev', v: string) => void;
   onRot: (v: boolean) => void;
+  err?: null | 'dims' | 'mkg' | 'rev';
   onNext: () => void;
 }
 
-export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck, onDim, onRot, onNext }: Props) {
+export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck, onDim, onRot, err, onNext }: Props) {
   const valid = [box.l, box.w, box.h].every(v => Number.isFinite(v) && v > 0);
   const nodeRef = useRef(null);
   const isPlaceholder = !!TRUCKS[truck]?.placeholder;
   const vol = (box.l * box.w * box.h) / 1e6;
+
+  /* เมื่อข้อมูลรถไม่ครบ ให้เลื่อนไปที่ช่องที่ต้องแก้และโฟกัสให้เลย */
+  useEffect(() => {
+    if (!err) return;
+    const id = err === 'mkg' ? 'mkg' : err === 'rev' ? 'rev' : 'bl';
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus({ preventScroll: true }); }
+  }, [err]);
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,420px)_1fr] gap-4 items-start" ref={nodeRef}>
@@ -68,16 +77,18 @@ export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck
           )}
 
           <div className="grid grid-cols-3 gap-2.5">
-            <Num id="bl" label="ยาว (ลึก)" unit="ซม." value={dims.l} onChange={v => onDim('l', v)} />
-            <Num id="bw" label="กว้าง" unit="ซม." value={dims.w} onChange={v => onDim('w', v)} />
-            <Num id="bh" label="สูง" unit="ซม." value={dims.h} onChange={v => onDim('h', v)} />
+            <Num id="bl" label="ยาว (ลึก)" unit="ซม." value={dims.l} bad={err === 'dims'} onChange={v => onDim('l', v)} />
+            <Num id="bw" label="กว้าง" unit="ซม." value={dims.w} bad={err === 'dims'} onChange={v => onDim('w', v)} />
+            <Num id="bh" label="สูง" unit="ซม." value={dims.h} bad={err === 'dims'} onChange={v => onDim('h', v)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 mt-3">
-            <Num id="mkg" label="น้ำหนักบรรทุกสูงสุด" hint="ต้องกรอกพิกัดจริงก่อนคำนวณ" unit="กก."
-              value={dims.mkg} onChange={v => onDim('mkg', v)} />
-            <Num id="rev" label="กันท้ายรถให้ถุงกระสอบ" unit="ซม."
-              value={dims.rev} onChange={v => onDim('rev', v)} />
+          <div className="grid grid-cols-2 gap-2.5 mt-3.5 items-start">
+            <Num id="mkg" label="น้ำหนักบรรทุกสูงสุด" unit="กก."
+              hint="ต้องกรอกพิกัดจริงของรถ"
+              value={dims.mkg} bad={err === 'mkg'} onChange={v => onDim('mkg', v)} />
+            <Num id="rev" label="กันท้ายรถให้กระสอบ" unit="ซม."
+              hint="เว้นท้ายรถไว้วางกระสอบ ไม่เว้นใส่ 0"
+              value={dims.rev} bad={err === 'rev'} onChange={v => onDim('rev', v)} />
           </div>
 
           <label
@@ -174,21 +185,26 @@ function PickCard({ id, sel, onPick, title, desc, chip, art }: {
   );
 }
 
-function Num({ id, label, hint, unit, value, onChange }: {
-  id: string; label: string; hint?: string; unit: string; value: string; onChange: (v: string) => void;
+function Num({ id, label, hint, unit, value, bad, onChange }: {
+  id: string; label: string; hint?: string; unit: string; value: string; bad?: boolean; onChange: (v: string) => void;
 }) {
   return (
     <div className="flex flex-col">
-      <label className="lp-label !mb-0 min-h-[34px] flex items-end" htmlFor={id}>
-        <span className="leading-[17px]">
-          {label}
-          {hint && <span className="font-normal text-muted"> · {hint}</span>}
-        </span>
+      <label className="lp-label !mb-1.5 leading-[18px] whitespace-nowrap overflow-hidden text-ellipsis" htmlFor={id}>
+        {label}
       </label>
-      <div className="lp-field mt-1.5">
-        <input id={id} type="number" inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} />
+      <div className="lp-field">
+        <input id={id} type="number" inputMode="decimal" value={value}
+          aria-invalid={bad || undefined} aria-describedby={hint ? id + '-h' : undefined}
+          onChange={e => onChange(e.target.value)}
+          className={bad ? '!border-danger !bg-danger-bg' : ''} />
         <span className="unit">{unit}</span>
       </div>
+      {hint && (
+        <p id={id + '-h'} className={`m-0 mt-1.5 text-[12.5px] leading-snug min-h-[34px] ${bad ? 'text-danger font-semibold' : 'text-muted'}`}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
