@@ -51,7 +51,7 @@ export default function Landing() {
               <span className="whitespace-nowrap">ด้วยแผนสามมิติ</span>
             </h1>
             <p className="text-[17px] sm:text-[18px] text-navy-200 max-w-[540px] mb-7">
-              บอกขนาดตู้กับจำนวนพัสดุในกองพัก ระบบคำนวณตำแหน่งวางทุกชิ้นด้วยขั้นตอนวิธีจุดสุดขอบ
+              บอกขนาดตู้กับจำนวนพัสดุในกองพัก ระบบจัดพัสดุชนิดเดียวกันเป็นบล็อกแล้ววางเต็มจากด้านในตู้ออกมา
               แล้วแสดงเป็นภาพสามมิติกับลำดับการวางที่พิมพ์ไปใช้หน้างานได้
             </p>
             <div className="flex flex-wrap gap-3">
@@ -137,10 +137,11 @@ export default function Landing() {
         <div className="max-w-[1160px] mx-auto px-5 grid lg:grid-cols-2 gap-10 items-center">
           <div>
             <p className="text-brand-600 font-semibold text-sm tracking-wide mb-1.5">หลักการคำนวณ</p>
-            <h2 className="text-[24px] sm:text-[32px] font-bold mb-3">ขั้นตอนวิธีจุดสุดขอบ<br />(Extreme Point)</h2>
+            <h2 className="text-[24px] sm:text-[32px] font-bold mb-3">การจัดวางแบบบล็อก<br />(Block Building)</h2>
             <p className="text-muted mb-6 text-[17px]">
-              แนวคิดของ Crainic, Perboli และ Tadei (2008) ทุกครั้งที่วางกล่อง ระบบจะสร้างจุดที่วางกล่องชิ้นถัดไปได้ขึ้นมาใหม่
-              แล้วลองวางเฉพาะที่จุดเหล่านั้น จึงคำนวณได้เร็วโดยไม่ต้องลองทุกตำแหน่งในตู้
+              แนวคิดของ Eley (2002) และ Fanslau และ Bortfeldt (2010) ระบบรวมพัสดุขนาดเดียวกันเป็นบล็อก
+              แล้ววางลงช่องว่างที่ลึกและต่ำที่สุดก่อน ด้านในตู้จึงเต็มเป็นกำแพงก่อนไล่ออกมาทางประตู
+              ช่องที่เหลือแบ่งเป็นเหนือบล็อก ข้างบล็อก และหน้าบล็อก
             </p>
             <ul className="list-none p-0 m-0 grid gap-2.5">
               {RULES.map((t, i) => (
@@ -152,7 +153,7 @@ export default function Landing() {
             </ul>
           </div>
           <div className="bg-navy-900 rounded-2xl p-5 text-navy-200">
-            <svg viewBox="0 0 360 260" role="img" aria-label="ภาพอธิบายจุดสุดขอบ" className="w-full h-auto block">
+            <svg viewBox="0 0 360 260" role="img" aria-label="ภาพอธิบายการจัดวางแบบบล็อก" className="w-full h-auto block">
               <defs>
                 <linearGradient id="gA" x1="0" x2="1"><stop offset="0" stopColor="#2f6ea3" /><stop offset="1" stopColor="#3f86c2" /></linearGradient>
                 <linearGradient id="gB" x1="0" x2="1"><stop offset="0" stopColor="#f59e0b" /><stop offset="1" stopColor="#fac278" /></linearGradient>
@@ -162,18 +163,18 @@ export default function Landing() {
               <text x="300" y="240" fill="#8fa6bc" fontSize="12">ความลึก</text>
               <text x="14" y="16" fill="#8fa6bc" fontSize="12">สูง</text>
               <rect x="40" y="130" width="120" height="90" fill="url(#gA)" rx="3" />
-              <text x="100" y="180" fill="#fff" fontSize="13" textAnchor="middle">กล่องที่วางแล้ว</text>
+              <text x="100" y="180" fill="#fff" fontSize="13" textAnchor="middle">บล็อกที่วางแล้ว</text>
               <rect x="40" y="70" width="70" height="60" fill="url(#gA)" opacity=".75" rx="3" />
               <rect x="160" y="170" width="70" height="50" fill="url(#gB)" rx="3" stroke="#fff" strokeDasharray="4 3" />
-              <text x="195" y="199" fill="#0f2236" fontSize="12" textAnchor="middle">ชิ้นถัดไป</text>
+              <text x="195" y="199" fill="#0f2236" fontSize="12" textAnchor="middle">บล็อกถัดไป</text>
               <g fill="#fac278" stroke="#0f2236" strokeWidth="2">
                 <circle cx="160" cy="220" r="7" /><circle cx="110" cy="130" r="7" /><circle cx="40" cy="70" r="7" />
                 <circle cx="110" cy="70" r="7" /><circle cx="160" cy="130" r="7" />
               </g>
             </svg>
             <p className="text-[14.5px] mt-3">
-              ● จุดสีส้มคือ <b className="text-white">จุดสุดขอบ</b> ตำแหน่งที่วางกล่องชิ้นถัดไปได้
-              ระบบเลือกจุดที่ลึกที่สุดและต่ำที่สุดที่วางได้โดยไม่ผิดเงื่อนไข
+              ● มุมสีส้มคือ <b className="text-white">มุมของช่องว่าง</b> ที่วางบล็อกถัดไปได้
+              ระบบเลือกช่องที่ลึกที่สุดและต่ำที่สุดที่วางได้โดยไม่ผิดเงื่อนไข
             </p>
           </div>
         </div>
