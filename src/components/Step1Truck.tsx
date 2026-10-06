@@ -46,7 +46,7 @@ export default function Step1Truck({ truck, dims, rot, box, reserve, onPickTruck
           <div className="space-y-2.5">
             <PickCard
               id="t4" sel={truck === 't4'} onPick={onPickTruck}
-              title="รถ 4 ล้อ ตู้ทึบ" desc="รถที่ใช้ในงานวิจัย" chip="ใช้ในการทดลอง"
+              title="รถกระบะ ขนาดมาตรฐาน" desc="ขนาดโดยประมาณ ควรวัดจริงก่อนใช้" chip="ค่าประมาณ"
               art={<TruckArt className="w-[54px] h-[26px]" />}
             />
             <PickCard

@@ -21,5 +21,5 @@ export const PALETTE = [
 
 /** ค่าสมมติ รอค่าที่วัดจริงจากหน้างาน */
 export const TRUCKS: Record<string, { l: number; w: number; h: number; mkg: number; placeholder?: boolean }> = {
-  t4: { l: 300, w: 170, h: 180, mkg: 0, placeholder: true },
+  t4: { l: 220, w: 150, h: 210, mkg: 0, placeholder: true },
 };

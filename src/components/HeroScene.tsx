@@ -21,12 +21,12 @@ export default function HeroScene() {
     const d = new THREE.DirectionalLight(0xffffff, 0.7); d.position.set(1, 2, 1.2); sc.add(d);
     const d2 = new THREE.DirectionalLight(0x88aaff, 0.25); d2.position.set(-1, 0.5, -1); sc.add(d2);
 
-    const box = { l: 300, w: 170, h: 180, maxKg: 0 };
+    const box = { l: 220, w: 150, h: 210, maxKg: 0 };
     const cols = ['#f59e0b', '#3f86c2', '#5fb37c', '#fac278', '#8b6fd1', '#2fb3a6'];
     const items = [
-      { name: 'A', l: 40, w: 60, h: 40, kg: 18, qty: 6 }, { name: 'B', l: 24, w: 40, h: 17, kg: 8, qty: 18 },
-      { name: 'C', l: 22, w: 35, h: 14, kg: 5, qty: 26 }, { name: 'D', l: 20, w: 30, h: 11, kg: 3.5, qty: 34 },
-      { name: 'E', l: 17, w: 25, h: 9, kg: 2, qty: 40 }, { name: 'F', l: 14, w: 20, h: 6, kg: 1.2, qty: 44 },
+      { name: 'A', l: 45, w: 41, h: 35, kg: 18, qty: 6 }, { name: 'B', l: 45, w: 30, h: 20, kg: 12, qty: 14 },
+      { name: 'C', l: 40, w: 24, h: 17, kg: 8, qty: 24 }, { name: 'D', l: 35, w: 22, h: 25, kg: 7, qty: 22 },
+      { name: 'E', l: 30, w: 20, h: 20, kg: 5, qty: 30 }, { name: 'F', l: 30, w: 20, h: 11, kg: 3.5, qty: 40 },
     ].map((o, i) => ({ ...o, color: cols[i] }));
     const r = pack(items, box, { allowRotate: true, rearReserve: 0 });
     const ox = -box.l / 2, oy = -box.h / 2, oz = -box.w / 2;
