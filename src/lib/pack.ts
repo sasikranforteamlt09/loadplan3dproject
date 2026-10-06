@@ -6,7 +6,8 @@
    (ตัดเงื่อนไขเดิมข้อ "ของหนักอยู่ท้ายกอง" และการสะท้อนแกนออก เพราะเป็นแนวปฏิบัติของสถานที่เดิม
     ลำดับการวางจึงเป็นชิ้นใหญ่ก่อน วางลึกสุดก่อน ตรงกับที่สังเกตหน้างาน)
    ขั้นตอน: เรียงพัสดุจากปริมาตรมากไปน้อย (ถ้าเท่ากันเรียงน้ำหนักมากก่อน) แล้ววางทีละชิ้น
-   ที่จุดสุดขอบจุดแรกที่ใส่ได้ โดยเรียงจุดจากลึกสุด ต่ำสุด ชิดซ้ายสุดก่อน */
+   โดยลองทุกจุดสุดขอบและทุกทิศทาง เลือกตำแหน่งที่ผ่านเงื่อนไขและทำให้ปลายด้านท้ายของพัสดุ
+   อยู่ลึกที่สุด (ถ้าเท่ากันเลือกชิดซ้ายสุด แล้วต่ำสุด) */
 
 /** กลุ่มขนาดพัสดุที่ผู้ใช้กรอก */
 export interface ItemGroup {
@@ -159,7 +160,10 @@ export function pack(items: ItemGroup[], box: Box, opt: PackOptions): PackResult
     pts.sort((a, b) => (a.x - b.x) || (a.z - b.z) || (a.y - b.y));
     let best: Cand | null = null;
 
-    outer:
+    /* ลองทุกจุดสุดขอบและทุกทิศทางที่ผ่านเงื่อนไข 2-6 แล้วเลือกตำแหน่งที่ปลายด้านท้ายของพัสดุ
+       อยู่ลึกที่สุด (x + ความยาว น้อยสุด) ถ้าเท่ากันเลือกชิดซ้ายสุด แล้วต่ำสุด
+       ทำให้เติมด้านในก่อน และเหลือพื้นที่ว่างรวมกันที่ท้ายรถมากขึ้น */
+    let bestKey: number[] | null = null;
     for (const p of pts) {
       for (const [ol, ow, oh] of orientations(u, opt.allowRotate)) {
         if (p.x + ol > L + EPS || p.y + ow > W + EPS || p.z + oh > H + EPS) continue;
@@ -170,9 +174,12 @@ export function pack(items: ItemGroup[], box: Box, opt: PackOptions): PackResult
         const sup = support(cand, placed, EPS);
         if (sup.ratio < 0.999) continue;                       // เงื่อนไข 5
         let bad = false;
-        for (const s of sup.under) if (s.kg + EPS < u.kg) { bad = true; break; }
+        for (const s2 of sup.under) if (s2.kg + EPS < u.kg) { bad = true; break; }
         if (bad) continue;                                     // เงื่อนไข 6
-        best = cand; break outer;
+        const k = [p.x + ol, p.y + ow, p.z + oh];
+        if (!bestKey || k[0] < bestKey[0] - EPS ||
+            (Math.abs(k[0] - bestKey[0]) < EPS && (k[1] < bestKey[1] - EPS ||
+              (Math.abs(k[1] - bestKey[1]) < EPS && k[2] < bestKey[2] - EPS)))) { bestKey = k; best = cand; }
       }
     }
 
