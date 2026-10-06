@@ -15,7 +15,6 @@ const RULES = [
   'กล่องไม่ซ้อนทับกัน และไม่เกินน้ำหนักบรรทุก',
   'ฐานของกล่องต้องมีสิ่งรองรับเต็มพื้นที่',
   'ของหนักอยู่ล่าง ไม่วางของหนักทับของเบา',
-  'ของหนักอยู่ด้านท้ายของกอง',
 ];
 
 export default function Landing() {
@@ -137,11 +136,11 @@ export default function Landing() {
         <div className="max-w-[1160px] mx-auto px-5 grid lg:grid-cols-2 gap-10 items-center">
           <div>
             <p className="text-brand-600 font-semibold text-sm tracking-wide mb-1.5">หลักการคำนวณ</p>
-            <h2 className="text-[24px] sm:text-[32px] font-bold mb-3">การจัดวางแบบบล็อก<br />(Block Building)</h2>
+            <h2 className="text-[24px] sm:text-[32px] font-bold mb-3">ขั้นตอนวิธีจุดสุดขอบ<br />(Extreme Point)</h2>
             <p className="text-muted mb-6 text-[17px]">
-              แนวคิดของ Eley (2002) และ Fanslau และ Bortfeldt (2010) ระบบรวมพัสดุขนาดเดียวกันเป็นบล็อก
-              แล้ววางลงช่องว่างที่ลึกและต่ำที่สุดก่อน ด้านในตู้จึงเต็มเป็นกำแพงก่อนไล่ออกมาทางประตู
-              ช่องที่เหลือแบ่งเป็นเหนือบล็อก ข้างบล็อก และหน้าบล็อก
+              ระบบเรียงพัสดุจากชิ้นใหญ่ไปชิ้นเล็ก แล้ววางทีละชิ้นที่จุดสุดขอบจุดแรกที่ใส่ได้
+              โดยเลือกจุดที่ลึกสุด ต่ำสุด และชิดซ้ายสุดก่อน ด้านในตู้จึงเต็มก่อนแล้วไล่ออกมาทางประตู
+              โดยอ้างอิงแนวคิดของ Crainic, Perboli และ Tadei (2008)
             </p>
             <ul className="list-none p-0 m-0 grid gap-2.5">
               {RULES.map((t, i) => (

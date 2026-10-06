@@ -1,18 +1,12 @@
-/* ===== แกนคำนวณ: การจัดวางแบบบล็อกในช่องว่างที่เหลือ (block-building) =====
-   อาศัยแนวคิดบล็อกและช่องว่างที่เหลือของ Eley (2002) และ Fanslau & Bortfeldt (2010)
-   แต่ใช้แบบละโมบ (greedy) บล็อกชนิดเดียว และลองหลายค่าตั้งต้น ไม่ได้ใช้การค้นหาแบบต้นไม้ของต้นฉบับ
-   - รวมพัสดุชนิดเดียวกันเป็นบล็อกสี่เหลี่ยม (กว้าง x ยาว x สูง หลายชิ้น) แล้ววางลงช่องว่างทีละช่อง
-   - เลือกช่องว่างที่ลึกสุด (ชิดหัวรถ) ต่ำสุด และชิดซ้ายสุดก่อน => ด้านในเต็มก่อนแล้วจึงไล่ออกมาทางประตู
-   - หลังวางบล็อก แบ่งช่องที่เหลือเป็น 3 ช่องที่ไม่ทับกัน: เหนือบล็อก ข้างบล็อก และหน้าบล็อก
+/* ===== แกนคำนวณ: ขั้นตอนวิธีจุดสุดขอบ (Extreme Point) =====
+   Crainic, Perboli & Tadei (2008) — ปัญหาการบรรจุสามมิติแบบทราบข้อมูลล่วงหน้า
    เงื่อนไขที่บังคับใช้ ตรงตามหัวข้อ 1.4.3 ของปริญญานิพนธ์
-     1) วางขนานแกน 2) อยู่ในขอบเขต 3) ไม่ซ้อนทับ  (เป็นจริงโดยโครงสร้างของช่องว่าง)
-     4) ไม่เกินน้ำหนักบรรทุก  (นับน้ำหนักสะสมก่อนวางทุกบล็อก)
-     5) ฐานรองรับ 100%  (ช่องเหนือบล็อกกว้างเท่าหน้าบนของบล็อกพอดี ช่องอื่นอยู่บนพื้นผิวเดิม)
-     6) ของหนักอยู่ล่าง  (ช่องเหนือบล็อกรับได้เฉพาะพัสดุที่หนักไม่เกินพัสดุในบล็อกนั้น)
-     7) ของหนักอยู่ด้านท้าย  (แบ่งโซนตามแนวลึก ของเบาโซนหัวรถ ของหนักโซนใกล้ประตู เป็นกติกาที่ผู้วิจัยออกแบบเอง
-        แล้วเลือกเฉพาะแผนที่ผ่านเกณฑ์ค่าเฉลี่ยความลึกเดียวกับ verify.ts ข้อ 7 ถ้าไม่มีแผนผ่าน
-        ใช้แผนสะท้อนแกนลึกแทน ข้อนี้จึงเป็นจริงจากการคัดเลือก ไม่ใช่ผลการทดลอง)
-   รุ่นก่อนหน้า (ขั้นตอนวิธีจุดสุดขอบ + สะท้อนแกน) เก็บไว้ที่ exp/pack_EP_v1_ceb1e9b4.ts */
+     1) วางขนานแกน   2) อยู่ในขอบเขต   3) ไม่ซ้อนทับ
+     4) ไม่เกินน้ำหนักบรรทุก   5) ฐานรองรับ 100%   6) ของหนักอยู่ล่าง
+   (ตัดเงื่อนไขเดิมข้อ "ของหนักอยู่ท้ายกอง" และการสะท้อนแกนออก เพราะเป็นแนวปฏิบัติของสถานที่เดิม
+    ลำดับการวางจึงเป็นชิ้นใหญ่ก่อน วางลึกสุดก่อน ตรงกับที่สังเกตหน้างาน)
+   ขั้นตอน: เรียงพัสดุจากปริมาตรมากไปน้อย (ถ้าเท่ากันเรียงน้ำหนักมากก่อน) แล้ววางทีละชิ้น
+   ที่จุดสุดขอบจุดแรกที่ใส่ได้ โดยเรียงจุดจากลึกสุด ต่ำสุด ชิดซ้ายสุดก่อน */
 
 /** กลุ่มขนาดพัสดุที่ผู้ใช้กรอก */
 export interface ItemGroup {
@@ -49,6 +43,7 @@ export interface Placed extends Unit {
   seq: number;
 }
 
+interface Cand { x: number; y: number; z: number; l: number; w: number; h: number }
 
 export interface Failed { u: Unit; why: string }
 
@@ -68,8 +63,34 @@ export interface PackResult {
   ms: number;
 }
 
+function orientations(it: { l: number; w: number; h: number }, allowRotate?: boolean): number[][] {
+  const [l, w, h] = [it.l, it.w, it.h];
+  if (!allowRotate) return [[l, w, h]];
+  const all = [[l, w, h], [l, h, w], [w, l, h], [w, h, l], [h, l, w], [h, w, l]];
+  const seen = new Set<string>(), out: number[][] = [];
+  for (const o of all) { const k = o.join(','); if (!seen.has(k)) { seen.add(k); out.push(o); } }
+  return out;
+}
 
+function overlap(a: Cand, b: Cand): boolean {
+  return a.x < b.x + b.l && b.x < a.x + a.l &&
+         a.y < b.y + b.w && b.y < a.y + a.w &&
+         a.z < b.z + b.h && b.z < a.z + a.h;
+}
 
+/* พื้นที่ฐานที่ได้รับการรองรับ และรายการชิ้นที่รองรับอยู่ */
+function support(cand: Cand, placed: Placed[], EPS: number): { ratio: number; under: Placed[] } {
+  if (cand.z <= EPS) return { ratio: 1, under: [] };
+  const need = cand.l * cand.w;
+  let got = 0; const under: Placed[] = [];
+  for (const p of placed) {
+    if (Math.abs(p.z + p.h - cand.z) > EPS) continue;
+    const ox = Math.min(cand.x + cand.l, p.x + p.l) - Math.max(cand.x, p.x);
+    const oy = Math.min(cand.y + cand.w, p.y + p.w) - Math.max(cand.y, p.y);
+    if (ox > EPS && oy > EPS) { got += ox * oy; under.push(p); }
+  }
+  return { ratio: got / need, under };
+}
 
 /* เรียงลำดับการวางแบบพึ่งพา: ชิ้นที่รองรับและชิ้นที่ถูกบังต้องมาก่อน */
 export function sequence(placed: Placed[], EPS: number): void {
@@ -103,162 +124,103 @@ export function sequence(placed: Placed[], EPS: number): void {
   out.forEach((p, i) => { placed[i] = p; p.seq = i + 1; });
 }
 
-interface T { gi: number; name: string; l: number; w: number; h: number; kg: number; color?: string; left: number }
-interface S { x: number; y: number; z: number; l: number; w: number; h: number; maxKg: number }
+export function pack(items: ItemGroup[], box: Box, opt: PackOptions): PackResult {
+  const EPS = 0.01;
+  const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const L = box.l - Math.max(0, +(opt.rearReserve || 0) || 0);   // โซนท้ายรถกันไว้ให้ถุงกระสอบ
+  const W = box.w, H = box.h;
 
-interface BOpt extends PackOptions { weightMode?: 'none' | 'asc' | 'band'; split?: 'front' | 'side' | 'best'; k?: number; fill?: number }
+  // กระจายจำนวนออกเป็นรายชิ้น แล้วเรียงชิ้นใหญ่ก่อน (ปริมาตรมาก → น้อย ถ้าเท่ากันน้ำหนักมากก่อน)
+  const units: Unit[] = [], badUnits: Unit[] = [];
+  items.forEach((it, gi) => {
+    const n = Math.min(100000, Math.max(0, Math.round(+it.qty) || 0));
+    const dimsOk = [+it.l, +it.w, +it.h].every(v => Number.isFinite(v) && v > 0);
+    for (let k = 0; k < n; k++) {
+      const u: Unit = { gi, name: it.name, l: +it.l, w: +it.w, h: +it.h, kg: Math.max(0, +it.kg || 0), color: it.color };
+      (dimsOk ? units : badUnits).push(u);
+    }
+  });
+  units.sort((a, b) => (b.l * b.w * b.h - a.l * a.w * a.h) || (b.kg - a.kg));
 
-function orients(t: T, rot?: boolean): number[][] {
-  const { l, w, h } = t;
-  if (!rot) return [[l, w, h]];
-  const all = [[l, w, h], [w, l, h], [l, h, w], [h, l, w], [w, h, l], [h, w, l]];
-  const seen = new Set<string>(), out: number[][] = [];
-  for (const o of all) { const k = o.join(','); if (!seen.has(k)) { seen.add(k); out.push(o); } }
-  return out;
-}
-
-function packBlock(items: ItemGroup[], box: Box, opt: BOpt): PackResult {
-  const EPS = 0.01, t0 = performance.now();
-  const L = box.l - (opt.rearReserve || 0), W = box.w, H = box.h;
-  const types: T[] = items.map((it, gi) => ({ gi, name: it.name, l: +it.l, w: +it.w, h: +it.h, kg: Math.max(0, +it.kg || 0), color: it.color, left: Math.max(0, Math.round(+it.qty) || 0) }));
-  /* ขนาดที่ไม่ใช่ตัวเลขหรือไม่มากกว่า 0 วางไม่ได้ ให้ไปอยู่ในรายการวางไม่ได้ทั้งหมด */
-  const bad = new Set(types.filter(t => ![t.l, t.w, t.h].every(v => Number.isFinite(v) && v > 0)));
-  const kgs = [...new Set(types.map(t => t.kg))].sort((a, b) => a - b);
-  /* โซนน้ำหนักตามแนวลึก (โหมด band): เรียงประเภทจากเบาไปหนัก แล้วแบ่งความยาวกองโดยประมาณตามสัดส่วนปริมาตร
-     ของเบาได้โซนลึก (หัวรถ) ของหนักได้โซนใกล้ประตู => เงื่อนไข 7 */
-  const totV = types.reduce((q, t) => q + t.left * t.l * t.w * t.h, 0);
-  const Lest = Math.min(L, totV / (W * H * (opt.fill ?? 0.8)));
-  const zone = new Map<T, [number, number]>();
-  { let c = 0; for (const t of types.slice().sort((a, b) => a.kg - b.kg)) { const v = t.left * t.l * t.w * t.h; zone.set(t, [c / totV * Lest, (c + v) / totV * Lest]); c += v; } }
-  let spaces: S[] = [{ x: 0, y: 0, z: 0, l: L, w: W, h: H, maxKg: Infinity }];
-  const placed: Placed[] = [];
+  const placed: Placed[] = [], failed: Failed[] = badUnits.map(u => ({ u, why: 'ขนาดไม่ถูกต้อง' }));
+  let pts: { x: number; y: number; z: number }[] = [{ x: 0, y: 0, z: 0 }];
   let totalKg = 0;
-  const cap = box.maxKg > 0 ? box.maxKg : Infinity;
 
-  while (spaces.length) {
-    spaces.sort((a, b) => (a.x - b.x) || (a.z - b.z) || (a.y - b.y));
-    const s = spaces.shift()!;
-    // ประเภทที่เลือกได้
-    let pool = types.filter(t => t.left > 0 && !bad.has(t) && t.kg <= s.maxKg + EPS && totalKg + t.kg <= cap + EPS);
-    if (opt.weightMode === 'asc' && pool.length) {
-      // ใช้กลุ่มน้ำหนักเบาสุดที่ยังมีของและวางลงช่องนี้ได้
-      for (const k of kgs) {
-        const sub = pool.filter(t => Math.abs(t.kg - k) < 1e-9 && orients(t, opt.allowRotate).some(([a, b, c]) => a <= s.l + EPS && b <= s.w + EPS && c <= s.h + EPS));
-        if (sub.length) { pool = sub; break; }
+  const key = (p: { x: number; y: number; z: number }) =>
+    p.x.toFixed(1) + '|' + p.y.toFixed(1) + '|' + p.z.toFixed(1);
+
+  /* พัสดุที่ขนาดและน้ำหนักเท่ากับชิ้นที่วางไม่ได้มาก่อน ถือว่าวางไม่ได้เช่นกัน (ลดเวลาเมื่อของล้นตู้) */
+  const failedSig = new Set<string>();
+  for (const u of units) {
+    const sig = u.l + '|' + u.w + '|' + u.h + '|' + u.kg;
+    if (failedSig.has(sig)) { failed.push({ u, why: 'ไม่มีพื้นที่ว่างที่วางได้' }); continue; }
+    if (box.maxKg > 0 && totalKg + u.kg > box.maxKg) { failed.push({ u, why: 'เกินน้ำหนักบรรทุก' }); continue; }
+
+    pts.sort((a, b) => (a.x - b.x) || (a.z - b.z) || (a.y - b.y));
+    let best: Cand | null = null;
+
+    outer:
+    for (const p of pts) {
+      for (const [ol, ow, oh] of orientations(u, opt.allowRotate)) {
+        if (p.x + ol > L + EPS || p.y + ow > W + EPS || p.z + oh > H + EPS) continue;
+        const cand: Cand = { x: p.x, y: p.y, z: p.z, l: ol, w: ow, h: oh };
+        let hit = false;
+        for (const q of placed) if (overlap(cand, q)) { hit = true; break; }
+        if (hit) continue;
+        const sup = support(cand, placed, EPS);
+        if (sup.ratio < 0.999) continue;                       // เงื่อนไข 5
+        let bad = false;
+        for (const s of sup.under) if (s.kg + EPS < u.kg) { bad = true; break; }
+        if (bad) continue;                                     // เงื่อนไข 6
+        best = cand; break outer;
       }
     }
-    let best: { t: T; o: number[]; nx: number; ny: number; nz: number; vol: number; score: number } | null = null;
-    for (const t of pool) for (const o of orients(t, opt.allowRotate)) {
-      const [a, b, c] = o;
-      if (a > s.l + EPS || b > s.w + EPS || c > s.h + EPS) continue;
-      const mx = Math.floor((s.l + EPS) / a), my = Math.floor((s.w + EPS) / b), mz = Math.floor((s.h + EPS) / c);
-      const byKg = t.kg > 0 ? Math.floor((cap - totalKg + EPS) / t.kg) : Infinity;
-      const n = Math.min(t.left, byKg);
-      if (n < 1) continue;
-      // สร้างบล็อกแบบกำแพง: เต็มความสูงก่อน แล้วความกว้าง แล้วค่อยลึก
-      const nz = Math.min(mz, n);
-      const ny = Math.min(my, Math.floor(n / nz));
-      const nx = Math.min(mx, Math.floor(n / (nz * ny)));
-      if (nx < 1 || ny < 1 || nz < 1) continue;
-      const vol = nx * ny * nz * a * b * c;
-      // คะแนน: ปริมาตรบล็อก + ความพอดีกับหน้าตัดช่อง (ลดเศษด้านกว้าง/สูง)
-      const fitYZ = (ny * b * nz * c) / (s.w * s.h);
-      let score = vol * (0.5 + fitYZ);
-      if (opt.weightMode === 'band' && Lest > 0) {
-        const [z0, z1] = zone.get(t)!;
-        const d = s.x < z0 ? z0 - s.x : s.x > z1 ? s.x - z1 : 0;
-        score /= 1 + (opt.k ?? 6) * d / Lest;
+
+    if (!best) { failedSig.add(sig); failed.push({ u, why: 'ไม่มีพื้นที่ว่างที่วางได้' }); continue; }
+
+    const item = Object.assign({}, u, best, { seq: placed.length + 1 }) as Placed;
+    placed.push(item);
+    totalKg += u.kg;
+
+    const seen = new Set(pts.map(key));
+    for (const np of [{ x: best.x + best.l, y: best.y, z: best.z },
+                      { x: best.x, y: best.y + best.w, z: best.z },
+                      { x: best.x, y: best.y, z: best.z + best.h }]) {
+      if (np.x < L - EPS && np.y < W - EPS && np.z < H - EPS && !seen.has(key(np))) {
+        seen.add(key(np)); pts.push(np);
       }
-      if (!best || score > best.score + 1e-6) best = { t, o, nx, ny, nz, vol, score };
     }
-    if (!best) continue;   // ช่องนี้ใช้ไม่ได้ ทิ้ง
-    const { t, o: [a, b, c], nx, ny, nz } = best;
-    for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) for (let k = 0; k < nz; k++) {
-      placed.push({ gi: t.gi, name: t.name, l: a, w: b, h: c, kg: t.kg, color: t.color, x: s.x + i * a, y: s.y + j * b, z: s.z + k * c, seq: 0 } as Placed);
-    }
-    const cnt = nx * ny * nz; t.left -= cnt; totalKg += cnt * t.kg;
-    const bl = nx * a, bw = ny * b, bh = nz * c;
-    const add = (q: S) => { if (q.l > EPS && q.w > EPS && q.h > EPS) spaces.push(q); };
-    add({ x: s.x, y: s.y, z: s.z + bh, l: bl, w: bw, h: s.h - bh, maxKg: t.kg });
-    const split = opt.split || 'best';
-    // ทางเลือก 1: ช่องหน้าบล็อกเต็มความกว้าง  ทางเลือก 2: ช่องข้างบล็อกเต็มความลึก
-    const A1 = [{ x: s.x, y: s.y + bw, z: s.z, l: bl, w: s.w - bw, h: s.h, maxKg: s.maxKg }, { x: s.x + bl, y: s.y, z: s.z, l: s.l - bl, w: s.w, h: s.h, maxKg: s.maxKg }];
-    const A2 = [{ x: s.x, y: s.y + bw, z: s.z, l: s.l, w: s.w - bw, h: s.h, maxKg: s.maxKg }, { x: s.x + bl, y: s.y, z: s.z, l: s.l - bl, w: bw, h: s.h, maxKg: s.maxKg }];
-    const vmax = (A: S[]) => Math.max(...A.map(q => q.l * q.w * q.h));
-    const pick = split === 'front' ? A1 : split === 'side' ? A2 : (vmax(A1) >= vmax(A2) ? A1 : A2);
-    pick.forEach(add);
+    pts = pts.filter(p => {
+      for (const q of placed) {
+        if (p.x > q.x - EPS && p.x < q.x + q.l - EPS &&
+            p.y > q.y - EPS && p.y < q.y + q.w - EPS &&
+            p.z > q.z - EPS && p.z < q.z + q.h - EPS) return false;
+      }
+      return true;
+    });
   }
 
   const usedL = placed.length ? Math.max(...placed.map(p => p.x + p.l)) : 0;
-  const volItems = placed.reduce((q, p) => q + p.l * p.w * p.h, 0);
-  const volUsed = usedL * W * H, volBoxZone = L * W * H, volWhole = box.l * box.w * box.h;
-  const volReserve = Math.max(0, Math.min(box.l, opt.rearReserve || 0)) * W * H;
-  const failed: Failed[] = [];
-  (failed as any)._types = types; (failed as any)._bad = bad; (failed as any)._kg = totalKg; (failed as any)._cap = cap;
-  return { placed, failed, usedL, totalKg, volItems, volUsed, volBoxZone, volWhole, volReserve,
-    volFree: Math.max(0, volBoxZone - volItems), U: volUsed > 0 ? volItems / volUsed * 100 : 0,
-    Uzone: volBoxZone > 0 ? volItems / volBoxZone * 100 : 0, ms: performance.now() - t0 };
-}
 
-/* ทดลองหลายค่าพารามิเตอร์ (multi-start) แล้วเลือกแผนที่ดีที่สุดที่เป็นไปตามเงื่อนไข 7
-   เกณฑ์เลือก: ผ่านเงื่อนไข 7 > วางได้มากกว่า > ด้านในครึ่งแรกเต็มกว่า > กองสั้นกว่า */
-function heavyRearOK(P: Placed[]): boolean {
-  /* ใช้กรณีเลวร้ายสุดเมื่อน้ำหนักเท่ากัน: ในกลุ่มหนักเลือกชิ้นที่ลึกสุด ในกลุ่มเบาเลือกชิ้นที่ใกล้ประตูสุด
-     ถ้ากรณีนี้ผ่าน ไม่ว่าเรียงชิ้นน้ำหนักเท่ากันแบบใดก็ผ่าน (ตรงกับเกณฑ์ใน verify.ts ข้อ 7) */
-  const n = P.length; if (!n) return true;
-  const q = Math.max(1, Math.floor(n / 4)), c = (p: Placed) => p.x + p.l / 2;
-  const heavy = P.slice().sort((a, b) => (b.kg - a.kg) || (c(a) - c(b))).slice(0, q);
-  const light = P.slice().sort((a, b) => (a.kg - b.kg) || (c(b) - c(a))).slice(0, q);
-  const mid = (A: Placed[]) => A.reduce((t, p) => t + c(p), 0) / A.length;
-  return mid(heavy) >= mid(light) - 0.01;
-}
-function innerFill(r: PackResult, W: number, H: number): number {
-  const half = r.usedL / 2; if (half <= 0) return 0;
-  let v = 0; for (const p of r.placed) { const b = Math.min(half, p.x + p.l); if (b > p.x) v += (b - p.x) * p.w * p.h; }
-  return v / (half * W * H);
-}
-export function pack(items: ItemGroup[], box: Box, opt: PackOptions): PackResult {
-  const t0 = performance.now();
-  const tries: BOpt[] = [];
-  for (const k of [6, 3, 12, 30]) for (const split of ['best', 'front', 'side'] as const) tries.push({ ...opt, weightMode: 'band', k, split });
-  for (const split of ['best', 'front', 'side'] as const) tries.push({ ...opt, weightMode: 'asc', split });
-  let best: PackResult | null = null, bk: number[] = [];
-  const cands: PackResult[] = [];
-  for (const o of tries) {
-    const r = packBlock(items, box, o); cands.push(r);
-    /* แผนสะท้อนแกนลึก (แบบเดียวกับระบบเดิม) เป็นตัวเลือกสำรองเมื่อแผนปกติไม่ผ่านเงื่อนไข 7 */
-    if (!heavyRearOK(r.placed) && r.placed.length) {
-      const m = { ...r, placed: r.placed.map(p => ({ ...p, x: r.usedL - (p.x + p.l) })) } as PackResult;
-      cands.push(m);
-    }
-  }
-  const keyOf = (r: PackResult) => [heavyRearOK(r.placed) ? 1 : 0, r.placed.length, Math.round(innerFill(r, box.w, box.h) * 1000), -Math.round(r.usedL)];
-  const ranked = cands.map(r => ({ r, k: keyOf(r) })).sort((A, B) => {
-    for (let i = 0; i < A.k.length; i++) if (A.k[i] !== B.k[i]) return B.k[i] - A.k[i];
-    return 0;
-  });
-  /* ตรวจซ้ำแบบเดียวกับ verify.ts ข้อ 7 หลังเรียงลำดับการจัดวางจริงแล้ว (กรณีน้ำหนักเท่ากันหลายชิ้น
-     ผลขึ้นกับลำดับ) เลือกแผนแรกที่ผ่านจริง ถ้าไม่มีเลยใช้แผนอันดับแรก */
-  const exact7 = (P: Placed[]) => {
-    const n = P.length; if (!n) return true;
-    const s = P.slice().sort((a, b) => a.kg - b.kg), q = Math.max(1, Math.floor(n / 4));
-    const mid = (A: Placed[]) => A.reduce((t, p) => t + p.x + p.l / 2, 0) / A.length;
-    return mid(s.slice(-q)) >= mid(s.slice(0, q)) - 0.01;
+  /* ลำดับการจัดวางจริง 
+     x = 0 คือผนังหน้าตู้ (ฝั่งหัวรถ) ผู้ปฏิบัติงานวางจากผนังหน้าไล่ออกมาทางประตูท้าย
+     เกณฑ์ที่ต้องการ: ลึกสุด (x น้อย) → ต่ำสุด (z น้อย) → ชิดซ้ายสุด (y น้อย)
+     แต่ห้ามชิ้นใดมาก่อน (ก) ชิ้นที่รองรับฐานของตนทุกชิ้น และ
+     (ข) ชิ้นที่อยู่ลึกกว่าและถูกชิ้นนี้บังทางเข้าจากประตู (ภาพฉายด้านข้าง y-z ทับกัน)
+     จึงใช้การเรียงแบบพึ่งพา (topological sort) ที่เลือกชิ้นตามเกณฑ์ข้างต้นเมื่อมีหลายชิ้นพร้อมวาง */
+  sequence(placed, EPS);
+  const volItems = placed.reduce((s, p) => s + p.l * p.w * p.h, 0);
+  const volUsed = usedL * W * H;
+  const volBoxZone = L * W * H;
+  const volWhole = box.l * box.w * box.h;
+  const volReserve = Math.max(0, Math.min(box.l, opt.rearReserve || 0)) * W * H;   // โซนท้ายรถที่กันไว้
+  const volFree = Math.max(0, volBoxZone - volItems);   // ปริมาตรว่างคงเหลือ (ไม่รวมโซนที่กันไว้)
+
+  return {
+    placed, failed, usedL, totalKg,
+    volItems, volUsed, volBoxZone, volWhole, volReserve, volFree,
+    U: volUsed > 0 ? (volItems / volUsed) * 100 : 0,          // นิยามตามหัวข้อ 1.6 ของเล่ม
+    Uzone: volBoxZone > 0 ? (volItems / volBoxZone) * 100 : 0,
+    ms: (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0,
   };
-  for (const { r } of ranked.slice(0, 6)) {
-    sequence(r.placed, 0.01);
-    if (exact7(r.placed)) { best = r; break; }
-  }
-  if (!best) best = ranked[0].r;
-  void bk;
-  /* รายการที่วางไม่ได้ สร้างเฉพาะของแผนที่เลือก */
-  { const f: any = best!.failed, out: Failed[] = [];
-    for (const t of f._types as T[]) for (let k = 0; k < t.left; k++)
-      out.push({ u: { gi: t.gi, name: t.name, l: t.l, w: t.w, h: t.h, kg: t.kg, color: t.color },
-        why: f._bad.has(t) ? 'ขนาดไม่ถูกต้อง' : (f._kg + t.kg > f._cap + 0.01) ? 'เกินน้ำหนักบรรทุก' : 'ไม่มีพื้นที่ว่างที่วางได้' } as Failed);
-    best!.failed = out; }
-  /* ลำดับการจัดวางจริง: ลึกสุด ต่ำสุด ชิดซ้ายสุด โดยชิ้นที่รองรับและชิ้นที่ถูกบังต้องมาก่อน */
-  sequence(best!.placed, 0.01);
-  best!.ms = performance.now() - t0;
-  return best!;
 }

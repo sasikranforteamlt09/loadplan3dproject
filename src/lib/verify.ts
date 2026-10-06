@@ -1,5 +1,5 @@
 /* ===== โปรแกรมตรวจสอบอิสระ =====
-   ตรวจแผนการจัดวางที่ได้จาก pack.ts ว่าเป็นไปตามเงื่อนไขทั้ง 7 ข้อจริงหรือไม่
+   ตรวจแผนการจัดวางที่ได้จาก pack.ts ว่าเป็นไปตามเงื่อนไขทั้ง 6 ข้อจริงหรือไม่
 
    หลักการสำคัญ: ไฟล์นี้เขียนขึ้นใหม่ทั้งหมดจากนิยามเงื่อนไขในปริญญานิพนธ์
    ไม่เรียกใช้ฟังก์ชันใด ๆ จาก pack.ts และไม่ใช้ค่าที่ pack.ts คำนวณไว้
@@ -61,7 +61,7 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
     let bad = 0;
     for (const p of placed) {
       const vals = [p.x, p.y, p.z, p.l, p.w, p.h];
-      if (vals.some(v => !isFinite(v))) bad++;
+      if (vals.some(v => !isFinite(v)) || p.l <= 0 || p.w <= 0 || p.h <= 0 || !isFinite(p.kg) || p.kg < 0) bad++;
     }
     results.push({
       no: 1, name: 'วางขนานแกนตู้ ไม่วางเอียง', checked: n, violations: bad,
@@ -145,26 +145,8 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
     });
   }
 
-  /* --- 7) ของหนักอยู่ด้านท้ายรถ --- */
-  {
-    const byKg = placed.slice().sort((a, b) => (a.kg || 0) - (b.kg || 0));
-    const q = Math.max(1, Math.floor(n / 4));
-    const light = byKg.slice(0, q), heavy = byKg.slice(-q);
-    const mid = (arr: Placed[]) => arr.reduce((s, p) => s + p.x + p.l / 2, 0) / arr.length;
-    const dLight = mid(light), dHeavy = mid(heavy);
-    const ok = n === 0 || dHeavy >= dLight - EPS;
-    results.push({
-      no: 7, name: 'ของหนักอยู่ด้านท้ายรถ (เกณฑ์ค่าเฉลี่ย)', checked: n, violations: ok ? 0 : 1,
-      detail: n === 0
-        ? 'ไม่มีพัสดุที่วางได้ จึงไม่มีข้อมูลให้ตรวจ ไม่ได้แปลว่าบรรจุสำเร็จ'
-        : `ค่าเฉลี่ยความลึกของกลุ่มหนักสุด 25% เท่ากับ ${dHeavy.toFixed(1)} ซม. · ` +
-          `กลุ่มเบาสุด 25% เท่ากับ ${dLight.toFixed(1)} ซม. (ยิ่งมากยิ่งใกล้ประตู) · ` +
-          'เป็นการตรวจระดับค่าเฉลี่ย ไม่ได้ยืนยันว่าพัสดุหนักทุกชิ้นอยู่ใกล้ประตูกว่าพัสดุเบาทุกชิ้น',
-      pass: ok, skipped: n === 0,
-    });
-  }
 
-  /* --- 8) ลำดับการจัดวางทำตามได้จริง --- */
+  /* --- 7) ลำดับการจัดวางทำตามได้จริง --- */
   {
     let bad = 0, rel = 0;
     const bySeq = placed.slice().sort((a, b) => a.seq - b.seq);
@@ -176,7 +158,7 @@ export function verify(placed: Placed[], box: Box, rearReserve = 0): VerifyRepor
       for (const u of under) { rel++; if ((seqOf.get(u) ?? 0) > (seqOf.get(p) ?? 0)) { bad++; } }
     }
     results.push({
-      no: 8, name: 'ลำดับการวางทำตามได้จริง (ของล่างต้องวางก่อน)', checked: rel, violations: bad,
+      no: 7, name: 'ลำดับการวางทำตามได้จริง (ของล่างต้องวางก่อน)', checked: rel, violations: bad,
       detail: `ตรวจว่าทุกชิ้นถูกวางหลังกล่องที่รองรับฐานของตน ${rel.toLocaleString('th-TH')} ความสัมพันธ์ · ` +
               'ไม่ได้ตรวจว่ามีทางเคลื่อนพัสดุเข้าไปวางได้จริง',
       pass: bad === 0,
